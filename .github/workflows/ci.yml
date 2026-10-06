@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Server, web & desktop tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix server
+      - run: npm ci --prefix desktop
+      - name: Install Chromium for the browser tests
+        run: npx playwright-core install --with-deps chromium
+      - run: npm test --prefix server
+      - run: npm test --prefix desktop
+      - name: End-to-end tests (browser + desktop app on a virtual display)
+        run: xvfb-run -a -s "-screen 0 1280x800x24" npm run test:e2e
+
+  desktop:
+    name: Desktop app (${{ matrix.os }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix desktop
+      - name: Build installer
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          SWIPE_SERVER: ${{ vars.SWIPE_SERVER }}
+        shell: bash
+        run: |
+          if [ -n "$SWIPE_SERVER" ]; then
+            node -e "const f='package.json',p=require('./'+f);p.swipeServer=process.env.SWIPE_SERVER;require('fs').writeFileSync(f,JSON.stringify(p,null,2))"
+          fi
+          npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swipe-desktop-${{ runner.os }}
+          path: |
+            desktop/release/*.exe
+            desktop/release/*.dmg
+            desktop/release/*.AppImage
+          if-no-files-found: error

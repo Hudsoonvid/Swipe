@@ -98,3 +98,15 @@ test('published test vectors (shared with Android/iOS)', async () => {
     assert.deepEqual(await cv.seal(tv.message.plain), tv.message.sealed);
   }
 });
+
+test('a different context (e.g. swapped DTLS fingerprints) fails', async () => {
+  const run = async (cv, ch) => {
+    const v = new Spake2('viewer', '123456789', 'pw', { context: cv });
+    const h = new Spake2('host', '123456789', 'pw', { context: ch });
+    const X = await v.start(); const Y = await h.start();
+    const c1 = await h.finish(X); const c2 = await v.finish(Y);
+    return v.verify(c1) && h.verify(c2);
+  };
+  assert.ok(await run('v=aa|h=bb', 'v=aa|h=bb'));
+  assert.ok(!(await run('v=aa|h=bb', 'v=aa|h=cc')));
+});

@@ -29,6 +29,8 @@ jobs:
       - name: Install Chromium for the browser tests
         run: npx playwright-core install --with-deps chromium
       - run: npm test --prefix server
+      - name: swipe.html is up to date with its sources
+        run: npm run build:standalone && git diff --exit-code swipe.html
       - run: npm test --prefix desktop
       - name: End-to-end tests (browser + desktop app on a virtual display)
         run: xvfb-run -a -s "-screen 0 1280x800x24" npm run test:e2e

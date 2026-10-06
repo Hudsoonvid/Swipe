@@ -203,12 +203,16 @@ export async function passwordScalar(code, password) {
 
 // role: 'viewer' (sends X, uses M) or 'host' (sends Y, uses N).
 export class Spake2 {
-  constructor(role, code, password, { scalar } = {}) {
+  // context: optional extra bytes bound into the transcript (e.g. the DTLS
+  // fingerprints of the connection the handshake runs over). Empty by default,
+  // which keeps the transcript identical to the published test vectors.
+  constructor(role, code, password, { scalar, context = '' } = {}) {
     if (role !== 'viewer' && role !== 'host') throw new Error('bad role');
     this.role = role;
     this.code = normalizeCode(code);
     this.password = password;
     this._scalar = scalar; // test hook only
+    this.context = context;
   }
 
   // Returns this side's public element as hex.
@@ -242,7 +246,8 @@ export class Spake2 {
         bigToBytes(X, ELEMENT_BYTES),
         bigToBytes(Y, ELEMENT_BYTES),
         bigToBytes(K, ELEMENT_BYTES),
-        bigToBytes(this.w, 32)
+        bigToBytes(this.w, 32),
+        this.context ? concat(new Uint8Array([0]), enc.encode(this.context)) : new Uint8Array(0)
       )
     );
     this.transcript = tt;

@@ -4,6 +4,23 @@ Share your screen from any device to any other device: phone to iPad, iPad to PC
 
 <p align="center"><img src="web/icons/icon-192.png" width="96" alt=""></p>
 
+## Fastest way to try it: one HTML file
+
+[`swipe.html`](swipe.html) is the whole thing in a single file, with no server to set up. Paste its contents into any online HTML runner, or save it and open it in Chrome, Edge, Firefox or Safari.
+
+- On the computer you want to share, click **Share my screen**. You get a code and a password.
+- On the other device, open the same page and enter them.
+
+Devices find each other through the free public [PeerJS](https://peerjs.com) service, which also provides relay servers. The password is still checked end to end, and it's tied to each connection's encryption fingerprint, so the PeerJS service can't learn the password or sit in the middle of the connection.
+
+Limits of the single-file version:
+
+- It's watch-only, because a web page can't move your mouse. For remote control, use the full setup below.
+- Screen sharing only works from a desktop browser.
+- Some online editors run pages in a frame that blocks screen capture. If **Share my screen** says it's blocked, open the saved file directly. Viewing works anywhere.
+
+`swipe.html` is generated: edit `standalone/template.html` and run `npm run build:standalone`.
+
 ## What works where
 
 | This device… | Share its screen | Be controlled remotely | View & control others |

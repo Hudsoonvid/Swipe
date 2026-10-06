@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0b0e14" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Swipe" />
+    <meta name="description" content="Share and control screens between phones, tablets and computers with a code and password." />
+    <title>Swipe</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script type="module" src="js/app.js"></script>
+  </head>
+  <body>
+    <main id="home" class="home">
+      <header class="topbar">
+        <div class="brand">
+          <img src="icons/icon.svg" alt="" width="32" height="32" />
+          <span>Swipe</span>
+        </div>
+        <button id="settingsBtn" class="icon-btn" type="button" aria-label="Settings" data-icon="gear"></button>
+      </header>
+
+      <div class="cards">
+        <section class="card" id="connectCard" aria-labelledby="connectTitle">
+          <h2 id="connectTitle">Connect to a device</h2>
+          <p class="muted">Enter the code and password shown on the device you want to see and control.</p>
+          <form id="connectForm" autocomplete="off">
+            <label class="field">
+              <span>Code</span>
+              <input id="codeInput" name="code" inputmode="numeric" enterkeyhint="next" placeholder="123 456 789" maxlength="11" required />
+            </label>
+            <label class="field">
+              <span>Password</span>
+              <input
+                id="pwInput"
+                name="password"
+                autocapitalize="characters"
+                autocorrect="off"
+                spellcheck="false"
+                enterkeyhint="go"
+                placeholder="ABCD-EFGH"
+                required
+              />
+            </label>
+            <label class="check"><input type="checkbox" id="rememberPw" /> Remember password on this device</label>
+            <button class="btn primary" type="submit" id="connectBtn">Connect</button>
+            <p class="error" id="connectError" role="alert" hidden></p>
+          </form>
+          <div id="recentWrap" hidden>
+            <h3>Recent</h3>
+            <ul id="recentList" class="recents"></ul>
+          </div>
+        </section>
+
+        <section class="card" id="shareCard" aria-labelledby="shareTitle">
+          <h2 id="shareTitle">Share this device</h2>
+          <div id="shareIdle">
+            <p class="muted" id="shareHint"></p>
+            <button class="btn primary" type="button" id="shareBtn">Share my screen</button>
+          </div>
+          <div id="shareActive" hidden>
+            <div class="creds">
+              <div class="cred">
+                <span class="cred-label">Your code</span>
+                <span class="cred-value mono" id="myCode">··· ··· ···</span>
+                <button class="chip" type="button" id="copyCodeBtn">Copy</button>
+              </div>
+              <div class="cred">
+                <span class="cred-label">Password</span>
+                <span class="cred-value mono" id="myPw"></span>
+                <span class="chips">
+                  <button class="chip" type="button" id="newPwBtn">New</button>
+                  <button class="chip" type="button" id="setPwBtn">Set…</button>
+                </span>
+              </div>
+            </div>
+            <details class="qr-wrap" id="qrWrap">
+              <summary>Show QR code (connects instantly)</summary>
+              <div class="qr" id="qr"></div>
+              <p class="muted small">Scan with a phone or tablet camera. The QR code contains the password.</p>
+            </details>
+            <p class="status" id="shareStatus"></p>
+            <ul class="viewers" id="viewerList"></ul>
+            <label class="check" id="controlRow"><input type="checkbox" id="allowControl" checked /> Allow connected devices to control this one</label>
+            <button class="btn danger" type="button" id="stopShareBtn">Stop sharing</button>
+          </div>
+        </section>
+      </div>
+
+      <footer class="foot muted small">
+        Connections are end-to-end encrypted. The server never sees your password or your screen.
+        <span id="serverLabel"></span>
+      </footer>
+    </main>
+
+    <div id="session" class="session" hidden>
+      <div id="stage" class="stage">
+        <video id="remoteVideo" playsinline autoplay muted disablepictureinpicture></video>
+        <div id="cursor" class="cursor" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M4 2l15 11.5-6.6.9 3.9 7.4-3 1.6-3.9-7.5L4 20z" fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </div>
+
+      <div id="toolbar" class="toolbar" data-ui>
+        <div class="tb-main" id="tbMain"></div>
+        <button class="tb-handle" type="button" id="tbHandle" aria-label="Show or hide toolbar"></button>
+      </div>
+
+      <div id="keysPanel" class="keys-panel" data-ui hidden></div>
+      <div id="statsBox" class="stats" data-ui hidden></div>
+
+      <div id="overlay" class="overlay" data-ui>
+        <div class="overlay-box">
+          <div class="spinner" id="overlaySpinner"></div>
+          <p id="overlayText">Connecting…</p>
+          <button class="btn" type="button" id="overlayCancel">Cancel</button>
+        </div>
+      </div>
+
+      <textarea id="kbInput" class="kb-input" aria-label="Type on the remote device" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" data-ui></textarea>
+    </div>
+
+    <dialog id="settingsDialog" class="dialog">
+      <form method="dialog" id="settingsForm">
+        <h2>Settings</h2>
+        <label class="field">
+          <span>This device's name</span>
+          <input id="setName" maxlength="40" />
+        </label>
+        <label class="field">
+          <span>Server</span>
+          <input id="setServer" type="url" placeholder="https://swipe.example.com" spellcheck="false" autocapitalize="off" />
+          <small class="muted">Leave empty to use the server this page was opened from.</small>
+        </label>
+        <fieldset class="field">
+          <legend>When sharing this screen</legend>
+          <label class="field inline">
+            <span>Quality</span>
+            <select id="setQuality">
+              <option value="auto">Balanced</option>
+              <option value="text">Sharp text</option>
+              <option value="motion">Smooth motion</option>
+            </select>
+          </label>
+          <label class="field inline">
+            <span>Max resolution</span>
+            <select id="setMaxRes">
+              <option value="720">720p</option>
+              <option value="1080">1080p</option>
+              <option value="1440">1440p</option>
+              <option value="0">Full</option>
+            </select>
+          </label>
+          <label class="field inline">
+            <span>Video codec</span>
+            <select id="setCodec">
+              <option value="auto">Automatic (H.264)</option>
+              <option value="h264">H.264</option>
+              <option value="vp8">VP8</option>
+              <option value="vp9">VP9</option>
+              <option value="av1">AV1</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" id="setKeepPw" /> Keep the same password next time</label>
+        </fieldset>
+        <label class="check"><input type="checkbox" id="setStats" /> Show connection stats while viewing</label>
+        <div class="dialog-actions">
+          <button class="btn" value="cancel" formnovalidate>Cancel</button>
+          <button class="btn primary" value="save" id="settingsSave">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="pwDialog" class="dialog">
+      <form method="dialog" id="pwForm">
+        <h2>Set a password</h2>
+        <p class="muted">Letters and numbers; not case-sensitive. Use at least 8 characters for remote access.</p>
+        <label class="field"><span>New password</span><input id="pwNew" minlength="4" maxlength="64" autocapitalize="characters" spellcheck="false" /></label>
+        <p class="error" id="pwError" hidden></p>
+        <div class="dialog-actions">
+          <button class="btn" value="cancel" formnovalidate>Cancel</button>
+          <button class="btn primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

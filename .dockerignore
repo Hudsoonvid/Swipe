@@ -1,0 +1,8 @@
+**/node_modules
+android
+ios
+desktop
+tests
+.git
+.github
+docs

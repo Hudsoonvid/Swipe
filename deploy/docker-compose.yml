@@ -1,0 +1,59 @@
+# Self-hosting on a VPS with automatic HTTPS (Caddy) and a TURN relay (coturn).
+#
+#   1. Point a DNS name (e.g. swipe.example.com) at the server.
+#   2. Open ports 80, 443 (TCP), 3478 (TCP+UDP) and 49160-49200 (UDP).
+#   3. cp .env.example .env and edit it.
+#   4. docker compose up -d
+services:
+  swipe:
+    build: ..
+    restart: unless-stopped
+    environment:
+      TRUST_PROXY: "1"
+      TURN_URLS: "turn:${DOMAIN}:3478?transport=udp,turn:${DOMAIN}:3478?transport=tcp"
+      TURN_SECRET: ${TURN_SECRET}
+    volumes:
+      - swipe-data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - swipe
+
+  # TURN relays media when two devices cannot connect directly (strict NATs,
+  # many mobile networks). Uses time-limited credentials minted by the server.
+  coturn:
+    image: coturn/coturn:4
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - -n
+      - --log-file=stdout
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET}
+      - --realm=${DOMAIN}
+      - --external-ip=${PUBLIC_IP}
+      - --no-cli
+      - --no-tls
+      - --no-dtls
+      - --no-multicast-peers
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+
+volumes:
+  swipe-data:
+  caddy-data:

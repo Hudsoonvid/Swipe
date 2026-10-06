@@ -32,6 +32,8 @@ jobs:
       - run: npm test --prefix desktop
       - name: End-to-end tests (browser + desktop app on a virtual display)
         run: xvfb-run -a -s "-screen 0 1280x800x24" npm run test:e2e
+      - name: Docker image builds
+        run: docker build -t swipe .
 
   desktop:
     name: Desktop app (${{ matrix.os }})
@@ -127,3 +129,20 @@ jobs:
           name: swipe-ios-unsigned
           path: Swipe-ios-unsigned.ipa
           if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [desktop, android, ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true

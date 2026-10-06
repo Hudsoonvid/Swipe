@@ -45,7 +45,7 @@ class ViewerActivity : Activity() {
         }
         setContentView(web)
         hideSystemBars()
-        val target = intent?.data?.takeIf { it.toString().startsWith(server) } ?: Uri.parse("$server/")
+        val target = intent?.data?.takeIf { it.toString().startsWith(server) } ?: Uri.parse("$server/?embedded=1")
         web.loadUrl(target.toString())
     }
 

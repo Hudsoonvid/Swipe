@@ -737,6 +737,9 @@ $('settingsForm').addEventListener('submit', (e) => {
 setupShareCard();
 renderRecents();
 
+// Inside the Android/iOS apps the page is only the viewer; the app shares.
+if (new URLSearchParams(location.search).has('embedded')) $('shareCard').hidden = true;
+
 // Links like https://server/#c=123456789&p=ABCD2345 (from the QR code).
 const hash = new URLSearchParams(location.hash.slice(1));
 if (hash.get('c')) {

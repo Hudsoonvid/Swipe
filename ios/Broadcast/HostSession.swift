@@ -121,7 +121,7 @@ final class HostSession: NSObject {
     }
 
     private func onSignal(_ m: [String: Any]) {
-        switch m["t"] as? String {
+        switch (m["t"] as? String) ?? "" {
         case "hosted":
             retry = 0
             code = m["code"] as? String
@@ -197,7 +197,7 @@ final class HostSession: NSObject {
         }
 
         func onSignal(_ d: [String: Any]) {
-            switch d["type"] as? String {
+            switch (d["type"] as? String) ?? "" {
             case "pake1" where state == "auth":
                 guard let code = host.code else { return }
                 state = "confirm"
@@ -297,7 +297,7 @@ final class HostSession: NSObject {
         }
 
         private func onSecure(_ m: [String: Any]) {
-            switch m["type"] as? String {
+            switch (m["type"] as? String) ?? "" {
             case "hello":
                 name = String((m["name"] as? String ?? "Viewer").prefix(64))
                 host.emitViewers()

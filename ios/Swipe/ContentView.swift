@@ -142,7 +142,7 @@ struct ContentView: View {
     private var viewer: some View {
         ZStack(alignment: .topLeading) {
             Color.black.ignoresSafeArea()
-            if let url = URL(string: server + "/") {
+            if let url = URL(string: server + "/?embedded=1") {
                 WebViewer(url: url).ignoresSafeArea()
             }
             Button {

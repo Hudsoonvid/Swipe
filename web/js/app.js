@@ -728,6 +728,8 @@ $('settingsForm').addEventListener('submit', (e) => {
   settings.set('showStats', $('setStats').checked);
   $('serverLabel').textContent = settings.server() ? `Server: ${settings.server().replace(/^https?:\/\//, '')}` : '';
   if (host) toast('Some changes apply the next time you start sharing');
+  // The desktop app shares automatically once it knows its server.
+  else if (native && settings.server()) startSharing({ auto: true });
 });
 
 // ---------- start-up ----------
@@ -749,10 +751,11 @@ if (native) {
     if (cmd === 'start-sharing') startSharing();
     if (cmd === 'stop-sharing') stopSharing();
   });
-  if (native.warning) toast(native.warning, 9000);
+  if (!settings.server()) toast('Open Settings (gear icon) and enter your Swipe server address', 6000);
+  else if (native.warning) toast(native.warning, 9000);
   if (settings.get('autoShare') ?? true) startSharing({ auto: true });
 } else if (!settings.server()) {
-  toast('Open Settings to enter your Swipe server address');
+  toast('Open Settings (gear icon) and enter your Swipe server address', 6000);
 }
 
 // Expose for automated tests.

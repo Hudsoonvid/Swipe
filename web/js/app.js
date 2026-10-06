@@ -621,9 +621,15 @@ async function startSharing({ auto = false } = {}) {
     renderQr();
     renderShareStatus();
   });
+  let viewerCount = 0;
   host.addEventListener('viewers', (e) => {
     renderShareStatus();
-    if (native) native.notifyViewers?.(e.detail.map((v) => v.name));
+    if (native) {
+      native.notifyViewers?.(e.detail.map((v) => v.name));
+      // Let go of any keys/buttons a departing viewer was holding.
+      if (e.detail.length < viewerCount) native.releaseInput?.();
+    }
+    viewerCount = e.detail.length;
   });
   host.addEventListener('authfail', () => toast('Someone tried to connect with a wrong password'));
   host.addEventListener('streamended', () => {
@@ -743,6 +749,7 @@ if (native) {
     if (cmd === 'start-sharing') startSharing();
     if (cmd === 'stop-sharing') stopSharing();
   });
+  if (native.warning) toast(native.warning, 9000);
   if (settings.get('autoShare') ?? true) startSharing({ auto: true });
 } else if (!settings.server()) {
   toast('Open Settings to enter your Swipe server address');

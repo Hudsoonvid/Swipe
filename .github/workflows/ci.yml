@@ -89,3 +89,41 @@ jobs:
           name: swipe-android
           path: Swipe-android.apk
           if-no-files-found: error
+
+  ios:
+    name: iOS app
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pairing crypto tests (shared vectors)
+        working-directory: ios/SwipeCore
+        run: swift test
+      - name: Generate Xcode project
+        working-directory: ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build for the simulator
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild -project Swipe.xcodeproj -scheme Swipe -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 40
+      - name: Build unsigned device app (for sideloading)
+        working-directory: ios
+        env:
+          SWIPE_SERVER: ${{ vars.SWIPE_SERVER }}
+        run: |
+          set -o pipefail
+          xcodebuild -project Swipe.xcodeproj -scheme Swipe -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO SWIPE_SERVER="$SWIPE_SERVER" build | tail -n 40
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Swipe.app Payload/
+          zip -qr ../Swipe-ios-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: swipe-ios-unsigned
+          path: Swipe-ios-unsigned.ipa
+          if-no-files-found: error

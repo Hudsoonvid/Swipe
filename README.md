@@ -6,7 +6,9 @@ Share your screen from any device to any other device: phone to iPad, iPad to PC
 
 ## Fastest way to try it: one HTML file
 
-[`swipe.html`](swipe.html) is the whole thing in a single file, with no server to set up. Paste its contents into any online HTML runner, or save it and open it in Chrome, Edge, Firefox or Safari.
+[`swipe.html`](swipe.html) is the whole thing in a single file, with no server to set up.
+
+**Open it here:** https://hudsoonvid.github.io/Swipe/ (works in Safari on iPhone and iPad, too; use *Share → Add to Home Screen* for an app icon). Paste its contents into any online HTML runner, or save it and open it in Chrome, Edge, Firefox or Safari.
 
 - On the computer you want to share, click **Share my screen**. You get a code and a password.
 - On the other device, open the same page and enter them.

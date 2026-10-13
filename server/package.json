@@ -1,0 +1,16 @@
+{
+  "name": "swipe-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Swipe signaling server: pairs devices by code and relays the encrypted WebRTC handshake",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}

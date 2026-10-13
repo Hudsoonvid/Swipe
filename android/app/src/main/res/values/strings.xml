@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Swipe</string>
+    <string name="control_service_label">Swipe remote control</string>
+    <string name="control_service_description">Lets devices you connect with Swipe tap, swipe and type on this phone while you are sharing your screen. Swipe only performs input sent by a device that entered your code and password.</string>
+</resources>

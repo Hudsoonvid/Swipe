@@ -1,0 +1,96 @@
+# Generate the Xcode project with XcodeGen:  brew install xcodegen && xcodegen generate
+# Before running on a device, set DEVELOPMENT_TEAM (and if needed the bundle
+# IDs / SWIPE_APP_GROUP) below, or in Xcode's Signing & Capabilities tab.
+name: Swipe
+options:
+  bundleIdPrefix: app.swipe
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: ""
+    SWIPE_APP_GROUP: group.app.swipe.ios
+    SWIPE_SERVER: ""
+    MARKETING_VERSION: 1.0.0
+    CURRENT_PROJECT_VERSION: 1
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGN_STYLE: Automatic
+
+packages:
+  WebRTC:
+    url: https://github.com/stasel/WebRTC
+    exactVersion: 154.0.0
+  SwipeCore:
+    path: SwipeCore
+
+targets:
+  Swipe:
+    type: application
+    platform: iOS
+    sources:
+      - Swipe
+    dependencies:
+      - package: SwipeCore
+      - package: WebRTC
+      - target: SwipeBroadcast
+    info:
+      path: Swipe/Info.plist
+      properties:
+        CFBundleDisplayName: Swipe
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad:
+          [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        ITSAppUsesNonExemptEncryption: false
+        SwipeAppGroup: $(SWIPE_APP_GROUP)
+        SwipeDefaultServer: $(SWIPE_SERVER)
+    entitlements:
+      path: Swipe/Swipe.entitlements
+      properties:
+        com.apple.security.application-groups: [$(SWIPE_APP_GROUP)]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.swipe.ios
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  SwipeBroadcast:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Broadcast
+    dependencies:
+      - package: SwipeCore
+      - package: WebRTC
+        embed: false
+      - sdk: ReplayKit.framework
+    info:
+      path: Broadcast/Info.plist
+      properties:
+        CFBundleDisplayName: Swipe
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.broadcast-services-upload
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SampleHandler
+          RPBroadcastProcessMode: RPBroadcastProcessModeSampleBuffer
+        SwipeAppGroup: $(SWIPE_APP_GROUP)
+        SwipeDefaultServer: $(SWIPE_SERVER)
+    entitlements:
+      path: Broadcast/Broadcast.entitlements
+      properties:
+        com.apple.security.application-groups: [$(SWIPE_APP_GROUP)]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.swipe.ios.Broadcast
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
+
+schemes:
+  Swipe:
+    build:
+      targets:
+        Swipe: all
+        SwipeBroadcast: all

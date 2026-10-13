@@ -1,0 +1,55 @@
+{
+  "note": "SPAKE2 test vectors; see docs/PROTOCOL.md. Message sealed with the viewer->host key.",
+  "spake2": [
+    {
+      "code": "123456789",
+      "password": "K7M2-PX9Q",
+      "x": "1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
+      "y": "2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e",
+      "w": "01e9dfd5a9175839fb137186fa4c76ad50f192aace48c722d2812dd40231c177",
+      "X": "e34f7f9ea96d1477730c3db9312ad0d81d29ad0035f7eb7ae41cd52cd6d55827a00f54861aeaac5cf2e170560e96300047a1d129f81b9648bc3407642afddf90ea5876701b13a40d32fd176396394b2bc745bf8ccfa2bc841fae0159a78d13a9dca7d3d43b19a80413c4f9cea12a1f930b616f4b1e1e8bc66a735ae3f976bd07fe1735b71467dab7c5005e8f9472b9e347f6eaef8f75012b8ea7d8e0182862a6bf20ffe67ab9822c34d9a3d412757edbc6eeadf12625a09c5bef40cae7f81a4c846d13e510d0a1687adc3f3d62f4889e79e588db14f2c2eeab8ef3e453778e9fc5e1b6b3bbce4f5554b97e6a049df466b98166159a08b0f9868eda94084584c3",
+      "Y": "ec674dd5cbf93e638b112721099a3ccf2e2637d9a584bd3e07fb9fbae6a12cf802f7ec128d2cd0a3335ef063e6504b251d273e94c9f2010fd6920f370edca44a16559dd0899c738fd34152d07c2de58f2a7e1cc5833980e9ed6712321735b50152afaf42fbc05a6f5e34b864f05edcd366239291fdb6792be6798b272408b616b4e5c9a22ccf8b9596e9429541f13579f3d91dce47129369af20cc006a1bf77f55e794ea2227f678edf6f9b0d34bdc1a7fd9cb003b3a505725a5aacfef5675ca73234df692945b153bd14143237fbfaa2377b9f64d0f07b5e5fe29202fe98c200b671655cae5f65453a8551ba4fb62a7d3e5848464e5f53cf4d8f1675d96c104",
+      "transcript": "79aeb9dfb93be08bdf9f47e9b1fe0fcb713a8160b3e4a9b1114e4982fb72a11a",
+      "confirmViewer": "460bc6ed366fd6b2d4ce960ea4b70b6d09a7c25060cabeac79a0f0eebd265d66",
+      "confirmHost": "8820b8cb8d1d292fb157f745cec184622258a7f58cf99af1d5ef643af6fdaee3",
+      "keyV2H": "8accd5de0d78e22077dd6d668819c1b195d16e4e8ac06bb59f39524bc7260b9b",
+      "keyH2V": "4d8688ece644b957505c74d00bd37aa1afa3bec28558fa9a6d0137ab71c6c152",
+      "message": {
+        "plain": {
+          "type": "offer",
+          "sdp": "v=0"
+        },
+        "plainJson": "{\"type\":\"offer\",\"sdp\":\"v=0\"}",
+        "sealed": {
+          "n": 0,
+          "c": "kon6kzGGXPC4EOP9635tbCErT56f/yCwLAzq4wuVWE1ITMIwpWZi31YXjyM="
+        }
+      }
+    },
+    {
+      "code": "987 654 321",
+      "password": "hunter two",
+      "x": "a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5",
+      "y": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+      "w": "e92b45ca77f7be094f5ba0c52ff1c4e789ee720d3a0bd269350e48e5381d4f55",
+      "X": "d255f1e1e8340763ca63a37d026e67c78b8309aa4ca823b9f56846f19fb6bbed0fa4c80e18e5564246222a49eee810dfa71fc0def7960e87a02e967ae74f8e9720ebf780c1920e1c2d693ab71a54fd93a1ef454904fdde8fecb17cf5c0da69957be6679b50c331b2bb616bea0a50fe9db2cd27e85e14f137275de40f2018219f0908ad45714570ac437e075fe753edc72651e12c9daedc67b5129ebb7ba0ccd7a3340a12fb8c1b0f7583cbd7e5d8f35d7bebe0b78e0f4d62f1ebae6d693b5ffdbee7de7af867d5c4fef4c83e98b0491352e39d62c67cb7c0406422c07c02ae00d74b7fc7c0b74b129069acb64b25b3a052f72990822574db14db3c212eb7abe3",
+      "Y": "893e87da107ff6074d18a5a156795966eeb7c541a728fe6e6826179faf8bc0748763d92ca8483794fea043884a0ee5274841d9758393b5ed4057b9499291e09ca0f3efc05fb17459c048c6c78edb30cef1c167470070784e0b1621ace1925edbba469077291a66a3dcbde96c3e44d96a2a2e1047e85cd1b8d951cd17ff4d2fa028bff39c287e4573ff88dc7a8503fab1249a81cd271ea72c0d9923138ad5a1090b7142e45c0678883b5823c7c3975bc47e674e705a177fdbac40ba80f4bd268429ba2099d7f7a48162b5780ac766e7544d5cda8ee6e14c29fb08d37b55a27c036af4fbeab15f95037f110d3f5fe15a2247129f6a642c4015e619bd057b2f17f1",
+      "transcript": "71c6800cfc95fe7f20ff2a40eafbe78343c5bbb9c8fafe262ae6ac16908cfc8a",
+      "confirmViewer": "ef3c8d0b68e7bb93f443e318fd17e2fba4eb0a85d731dbcf82641a41d145d865",
+      "confirmHost": "4adbf2d0136e4d8d68af9262a67331f7afd995828fa5a7e6c49ec78fb976285c",
+      "keyV2H": "af977bf1cd4a1565911a69ae6951019149e261d927d9fb2aad3765a774a6e072",
+      "keyH2V": "b9b50454d4810d7270cf6b2302b1b5c1f48dfc12afbae16436182aeb9ae5e1cd",
+      "message": {
+        "plain": {
+          "type": "offer",
+          "sdp": "v=0"
+        },
+        "plainJson": "{\"type\":\"offer\",\"sdp\":\"v=0\"}",
+        "sealed": {
+          "n": 0,
+          "c": "qs3hFOhwWeQeKvdz8dDw1OFcs4fOd2hhSqSrJGTAU+J1vaFsgqxjAh+Dhio="
+        }
+      }
+    }
+  ]
+}

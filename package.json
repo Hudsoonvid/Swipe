@@ -1,0 +1,19 @@
+{
+  "name": "swipe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Share and control screens between any devices with a code and password",
+  "type": "module",
+  "scripts": {
+    "start": "npm --prefix server start",
+    "test": "npm --prefix server test && npm run test:e2e",
+    "test:e2e": "node --test tests/e2e/*.test.js",
+    "icons": "node tests/tools/render-icons.js",
+    "build:standalone": "node tools/build-standalone.mjs"
+  },
+  "devDependencies": {
+    "peer": "^1.0.2",
+    "peerjs": "^1.5.5",
+    "playwright-core": "1.56.1"
+  }
+}

@@ -1,0 +1,23 @@
+# One-click deploy to Render (https://render.com): New > Blueprint > this repo.
+services:
+  - type: web
+    name: swipe
+    runtime: node
+    plan: free
+    buildCommand: npm ci --prefix server --omit=dev
+    startCommand: node server/src/server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
+      # Optional TURN relay (recommended for phones on mobile data):
+      - key: TURN_URLS
+        sync: false
+      - key: TURN_SECRET
+        sync: false
+      - key: TURN_USERNAME
+        sync: false
+      - key: TURN_PASSWORD
+        sync: false

@@ -1,0 +1,76 @@
+{
+  "name": "swipe-desktop",
+  "productName": "Swipe",
+  "version": "1.0.0",
+  "description": "Share this computer's screen and let your other devices control it",
+  "main": "main.js",
+  "author": "Swipe",
+  "license": "MIT",
+  "private": true,
+  "swipeServer": "",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "dependencies": {
+    "@jitsi/robotjs": "^0.6.24"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "app.swipe.desktop",
+    "productName": "Swipe",
+    "files": [
+      "main.js",
+      "preload.cjs",
+      "input.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web",
+        "to": "web"
+      }
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "npmRebuild": false,
+    "win": {
+      "target": "nsis",
+      "icon": "../web/icons/icon-512.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity",
+      "icon": "../web/icons/icon-512.png",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSScreenCaptureUsageDescription": "Swipe shares this screen with the devices you connect.",
+        "NSAppleEventsUsageDescription": "Swipe controls this Mac on behalf of the devices you connect."
+      }
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Network",
+      "icon": "../web/icons/icon-512.png",
+      "syncDesktopName": true
+    },
+    "publish": null
+  },
+  "repository": "https://github.com/Hudsoonvid/Swipe",
+  "desktopName": "swipe.desktop"
+}

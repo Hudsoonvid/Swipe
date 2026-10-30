@@ -83,7 +83,7 @@ The code stays the same for each device. The password is random; you can make a 
 
 **Controlling an Android phone:** tap, swipe and long-press map directly, and the toolbar has Back, Home and Recents. Typing goes into the focused text field.
 
-**Several screens:** in the desktop app, every monitor is available automatically. In a browser (including `swipe.html`), click **+ Add screen** while sharing to offer another screen or window. Viewers tap **◀ ▶** in the toolbar (or press `[` and `]`) to move between them. The picture changes for everyone watching.
+**Several screens:** in the desktop app, every monitor is available automatically. In a browser (including `swipe.html`), click **+ Add screen** while sharing to offer another screen or window. Viewers tap **◀ ▶** in the toolbar to move between them (in `swipe.html`, `[` and `]` work too; in the full app those keys go to the remote computer). The picture changes for everyone watching.
 
 **Chat:** everyone in a session can chat: the person sharing (in the Share card) and every viewer (the chat button in the toolbar). New messages pop up briefly on viewers' screens, and people joining see the last 30 messages. Typing in the chat box never goes to the remote computer. Sessions shared from the Android or iOS apps don't have chat yet.
 

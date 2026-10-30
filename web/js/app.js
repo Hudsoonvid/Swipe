@@ -27,6 +27,8 @@ const ICONS = {
   home: '<circle cx="12" cy="12" r="7"/>',
   recents: '<rect x="5" y="5" width="14" height="14" rx="2"/>',
   zoomout: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6"/>',
+  next: '<path d="M9 6l6 6-6 6"/>',
+  chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
 };
 
 function icon(name) {
@@ -49,6 +51,27 @@ function toast(msg, ms = 2600) {
 function showError(el, msg) {
   el.textContent = msg;
   el.hidden = !msg;
+}
+
+// ---------- chat rendering (shared by host and viewer) ----------
+
+function chatLine(msg) {
+  const li = document.createElement('li');
+  if (msg.system) {
+    li.className = 'sys';
+    li.textContent = msg.text;
+  } else {
+    const b = document.createElement('b');
+    b.textContent = msg.from;
+    li.append(b, document.createTextNode(msg.text));
+  }
+  return li;
+}
+
+function appendChat(list, msg) {
+  list.append(chatLine(msg));
+  while (list.children.length > 100) list.firstChild.remove();
+  list.scrollTop = list.scrollHeight;
 }
 
 async function copy(text) {
@@ -177,6 +200,7 @@ async function connect(code, password, remember) {
     updateToolbar();
     input?.view.layout();
   });
+  session.addEventListener('chat', (e) => onViewerChat(e.detail));
   session.addEventListener('state', (e) => {
     const { state, message } = e.detail;
     if (state === 'connected') setOverlay(null);
@@ -208,6 +232,48 @@ async function connect(code, password, remember) {
   }
 }
 
+let unread = 0;
+let popTimer;
+
+function onViewerChat(msg) {
+  appendChat($('viewChat'), msg);
+  if (msg.history || msg.system || !$('chatPanel').hidden) return;
+  unread++;
+  updateToolbar();
+  const pop = $('chatPop');
+  pop.replaceChildren(...chatLine(msg).childNodes);
+  pop.hidden = false;
+  clearTimeout(popTimer);
+  popTimer = setTimeout(() => (pop.hidden = true), 4500);
+}
+
+function toggleChat(open = $('chatPanel').hidden) {
+  $('chatPanel').hidden = !open;
+  if (open) {
+    unread = 0;
+    $('chatPop').hidden = true;
+    const list = $('viewChat');
+    list.scrollTop = list.scrollHeight;
+    if (!env.isTouch) $('viewChatIn').focus();
+  }
+  updateToolbar();
+}
+
+$('chatClose').addEventListener('click', () => toggleChat(false));
+$('chatPop').addEventListener('click', () => toggleChat(true));
+$('viewChatForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (viewer?.sendChat($('viewChatIn').value)) $('viewChatIn').value = '';
+});
+
+function stepScreen(delta) {
+  const info = viewer?.info;
+  const list = info?.screens || [];
+  if (list.length < 2) return;
+  const i = Math.max(0, list.findIndex((s) => s.id === info.screen));
+  viewer.send({ t: 'screen', id: list[(i + delta + list.length) % list.length].id });
+}
+
 function enterSession(session) {
   document.body.classList.add('in-session');
   $('home').hidden = true;
@@ -233,6 +299,10 @@ function enterSession(session) {
 function leaveSession() {
   input?.destroy();
   input = null;
+  unread = 0;
+  $('viewChat').replaceChildren();
+  $('chatPanel').hidden = true;
+  $('chatPop').hidden = true;
   const s = viewer;
   viewer = null;
   s?.close();
@@ -341,14 +411,26 @@ function updateToolbar() {
   }
   if (info?.screens?.length > 1) {
     items.push(sep());
-    info.screens.forEach((s, i) =>
-      items.push(
-        tbButton('screen', `Show ${s.name}`, () => viewer.send({ t: 'screen', id: s.id }), {
-          text: `${i + 1}`,
-          on: s.id === info.screen,
-        })
-      )
-    );
+    const i = Math.max(0, info.screens.findIndex((s) => s.id === info.screen));
+    items.push(tbButton('back', 'Previous screen', () => stepScreen(-1)));
+    const label = document.createElement('span');
+    label.className = 'tb-label';
+    label.id = 'screenLabel';
+    label.title = info.screens[i].name;
+    label.textContent = window.innerWidth < 600 ? `${i + 1}/${info.screens.length}` : `${info.screens[i].name} (${i + 1}/${info.screens.length})`;
+    items.push(label);
+    items.push(tbButton('next', 'Next screen', () => stepScreen(1)));
+  }
+  if (info?.chat) {
+    const chatBtn = tbButton('chat', 'Chat', () => toggleChat(), { on: !$('chatPanel').hidden });
+    if (unread) {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.id = 'chatBadge';
+      badge.textContent = String(unread);
+      chatBtn.append(badge);
+    }
+    items.push(chatBtn);
   }
   items.push(sep());
   if (input?.view.zoomed) items.push(tbButton('zoomout', 'Reset zoom', () => (input.view.reset(), updateToolbar())));
@@ -463,6 +545,113 @@ function stopStats() {
 let host = null;
 let password = null;
 let screenId = null;
+// A browser host can offer several captured screens/windows to switch between.
+let browserScreens = []; // [{ id, name, stream }]
+let screenSeq = 0;
+
+function relabelBrowserScreens() {
+  browserScreens.forEach((s, i) => {
+    const surface = s.stream.getVideoTracks()[0]?.getSettings?.().displaySurface;
+    const kind = surface === 'window' ? 'Window' : surface === 'browser' ? 'Tab' : 'Screen';
+    s.name = `${kind} ${i + 1}`;
+  });
+}
+
+function addBrowserScreen(stream) {
+  const entry = { id: `b${++screenSeq}`, name: '', stream };
+  browserScreens.push(entry);
+  relabelBrowserScreens();
+  stream.getVideoTracks()[0]?.addEventListener('ended', () => removeBrowserScreen(entry));
+  return entry;
+}
+
+function removeBrowserScreen(entry) {
+  const i = browserScreens.indexOf(entry);
+  if (i < 0) return;
+  for (const t of entry.stream.getTracks()) t.stop();
+  browserScreens.splice(i, 1);
+  if (!browserScreens.length) return stopSharing();
+  relabelBrowserScreens();
+  if (screenId === entry.id) switchToScreen(browserScreens[Math.min(i, browserScreens.length - 1)].id);
+  else {
+    host?.broadcastInfo();
+    renderHostScreens();
+  }
+}
+
+function hostScreenList() {
+  return native ? native.cachedScreens() : browserScreens.map(({ id, name }) => ({ id, name }));
+}
+
+// Shows another monitor/window to every viewer.
+async function switchToScreen(id) {
+  if (!host) return;
+  try {
+    if (native) {
+      if (id === screenId) return;
+      screenId = id;
+      if (host.stream) await host.replaceStream(await captureScreen());
+      else host.broadcastInfo();
+    } else {
+      const entry = browserScreens.find((s) => s.id === id);
+      if (!entry) return;
+      screenId = id;
+      await host.replaceStream(entry.stream, { keepOld: true });
+    }
+  } catch (err) {
+    console.warn('screen switch failed', err);
+  }
+  renderHostScreens();
+}
+
+async function addScreen() {
+  let stream;
+  try {
+    stream = await captureScreen();
+  } catch (e) {
+    if (e.name !== 'NotAllowedError') toast(`Could not add that screen: ${e.message}`);
+    return;
+  }
+  const entry = addBrowserScreen(stream);
+  await switchToScreen(entry.id);
+  toast('Screen added. Viewers can switch with ◀ ▶.');
+}
+
+function renderHostScreens() {
+  const box = $('hostScreens');
+  const list = host ? hostScreenList() : [];
+  box.hidden = !host || (native && list.length < 2);
+  if (box.hidden) return;
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = list.length > 1 ? 'Showing:' : 'Screens:';
+  const buttons = list.map((s) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip' + (s.id === screenId ? ' on' : '');
+    b.textContent = s.name;
+    b.addEventListener('click', () => switchToScreen(s.id));
+    return b;
+  });
+  const extra = [];
+  if (!native) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'chip';
+    add.id = 'addScreenBtn';
+    add.textContent = '+ Add screen';
+    add.addEventListener('click', addScreen);
+    extra.push(add);
+  }
+  box.replaceChildren(label, ...buttons, ...extra);
+}
+
+$('hostChatForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!host) return;
+  host.postChat({ from: `${settings.deviceName()} (sharing)`, text: $('hostChatIn').value });
+  $('hostChatIn').value = '';
+});
 
 function captureConstraints() {
   const maxRes = Number(settings.get('maxRes'));
@@ -479,7 +668,7 @@ async function captureScreen() {
   if (native) await native.selectScreen(screenId);
   const stream = await navigator.mediaDevices.getDisplayMedia({
     video: captureConstraints(),
-    audio: !native,
+    audio: !native && browserScreens.length === 0,
     selfBrowserSurface: 'exclude',
     surfaceSwitching: 'include',
     systemAudio: 'include',
@@ -582,6 +771,7 @@ async function startSharing({ auto = false } = {}) {
       if (e.name !== 'NotAllowedError') toast(`Could not capture the screen: ${e.message}`);
       return;
     }
+    screenId = addBrowserScreen(stream).id;
   }
 
   const keep = settings.get('keepPassword');
@@ -598,6 +788,7 @@ async function startSharing({ auto = false } = {}) {
     quality: settings.get('quality'),
     codec: settings.get('codec'),
     acquireStream: async () => {
+      if (!native) return browserScreens.find((s) => s.id === screenId)?.stream || browserScreens[0]?.stream;
       if (stream && stream.getVideoTracks()[0]?.readyState === 'live') return stream;
       stream = await captureScreen();
       return stream;
@@ -610,7 +801,7 @@ async function startSharing({ auto = false } = {}) {
         }
       : undefined,
     onInput: (evt) => native?.input(evt),
-    screens: () => (native ? native.cachedScreens() : []),
+    screens: hostScreenList,
     screenId: () => screenId,
   });
   setPassword(pw);
@@ -624,6 +815,7 @@ async function startSharing({ auto = false } = {}) {
   let viewerCount = 0;
   host.addEventListener('viewers', (e) => {
     renderShareStatus();
+    renderHostScreens(); // the app's monitor list may have changed
     if (native) {
       native.notifyViewers?.(e.detail.map((v) => v.name));
       // Let go of any keys/buttons a departing viewer was holding.
@@ -632,20 +824,11 @@ async function startSharing({ auto = false } = {}) {
     viewerCount = e.detail.length;
   });
   host.addEventListener('authfail', () => toast('Someone tried to connect with a wrong password'));
-  host.addEventListener('streamended', () => {
-    // The user pressed the browser's "Stop sharing" button.
-    if (!native) stopSharing();
-  });
-  host.addEventListener('screenrequest', async (e) => {
-    if (!native || e.detail === screenId) return;
-    screenId = e.detail;
-    try {
-      if (host.stream) await host.replaceStream(await captureScreen());
-      else host.broadcastInfo();
-    } catch (err) {
-      console.warn('screen switch failed', err);
-    }
-  });
+  // (A browser screen that stops is removed by its own 'ended' listener.)
+  host.addEventListener('screenrequest', (e) => switchToScreen(e.detail));
+  host.addEventListener('chat', (e) => appendChat($('hostChat'), e.detail));
+  $('hostChat').replaceChildren();
+  renderHostScreens();
 
   $('shareIdle').hidden = true;
   $('shareActive').hidden = false;
@@ -662,6 +845,9 @@ async function startSharing({ auto = false } = {}) {
 function stopSharing() {
   host?.stop();
   host = null;
+  for (const s of browserScreens) for (const t of s.stream.getTracks()) t.stop();
+  browserScreens = [];
+  renderHostScreens();
   $('shareIdle').hidden = false;
   $('shareActive').hidden = true;
   keepAwake(!!viewer);

@@ -214,6 +214,10 @@ export class ViewerSession extends EventTarget {
     if (m.t === 'info') {
       this.info = m;
       this.dispatchEvent(new CustomEvent('info', { detail: m }));
+    } else if (m.t === 'chat') {
+      this.dispatchEvent(new CustomEvent('chat', { detail: chatMsg(m) }));
+    } else if (m.t === 'chatHistory' && Array.isArray(m.list)) {
+      for (const c of m.list.slice(-30)) this.dispatchEvent(new CustomEvent('chat', { detail: { ...chatMsg(c), history: true } }));
     }
   }
 
@@ -230,6 +234,11 @@ export class ViewerSession extends EventTarget {
     if (lossy && ch.bufferedAmount > 32_768) return false;
     ch.send(JSON.stringify(evt));
     return true;
+  }
+
+  sendChat(text) {
+    const t = String(text ?? '').trim().slice(0, 500);
+    return t ? this.send({ t: 'chat', text: t }) : false;
   }
 
   async stats() {
@@ -255,4 +264,9 @@ export class ViewerSession extends EventTarget {
     for (const t of this.stream.getTracks()) t.stop();
     this._setState('closed', { reason, message });
   }
+}
+
+function chatMsg(m) {
+  const clean = (v, max) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
+  return { from: clean(m.from, 60), text: clean(m.text, 500), system: !!m.system };
 }

@@ -28,10 +28,12 @@ after(async () => {
 
 // A moving test pattern stands in for the real screen.
 function fakeScreen() {
+  let calls = 0;
   navigator.mediaDevices.getDisplayMedia = async () => {
+    // The first "screen" is 1280x720; any added later is 800x600.
     const c = document.createElement('canvas');
-    c.width = 1280;
-    c.height = 720;
+    c.width = calls ? 800 : 1280;
+    c.height = calls++ ? 600 : 720;
     const ctx = c.getContext('2d');
     let i = 0;
     setInterval(() => {
@@ -147,9 +149,20 @@ test('viewer connects with code + password, sees the screen and controls the hos
   assert.deepEqual(keys, ['kd:ControlLeft', 'kd:KeyC', 'ku:KeyC', 'ku:ControlLeft']);
   assert.ok(inputs.find((e) => e.t === 'wh').dy > 0);
 
-  // Viewer asks for the second monitor.
-  await viewer.page.click('button[title="Show Screen 2"]');
+  // Viewer steps to the next monitor with the ▶ button.
+  assert.equal(await viewer.page.textContent('#screenLabel'), 'Screen 1 (1/2)');
+  await viewer.page.click('button[title="Next screen"]');
   await host.page.waitForFunction(() => window.__screen === 's2');
+  await viewer.page.waitForFunction(() => document.getElementById('screenLabel')?.textContent === 'Screen 2 (2/2)');
+
+  // Chatting while controlling: the typing goes to the chat, not to the computer.
+  const before = await host.page.evaluate(() => window.__inputs.length);
+  await viewer.page.click('button[title="Chat"]');
+  await viewer.page.locator('#viewChatIn').pressSequentially('ok!');
+  await viewer.page.press('#viewChatIn', 'Enter');
+  await host.page.waitForFunction(() => document.getElementById('hostChat').textContent.includes('ok!'));
+  const typed = (await host.page.evaluate(() => window.__inputs)).slice(before).filter((e) => e.t === 'tx' || e.t === 'kd');
+  assert.deepEqual(typed, []);
 
   // Host disconnects the viewer.
   await host.page.click('#viewerList button');
@@ -232,4 +245,54 @@ test('touch viewer: tap clicks, long-press right-clicks on a desktop host', asyn
   assert.ok(Math.abs(right.x - 0.6) < 0.01 && Math.abs(right.y - 0.6) < 0.01);
   await tablet.close();
   await host.ctx.close();
+});
+
+test('browser host: add a second screen, viewers switch with ▶ and everyone chats', async () => {
+  const ctx = await browser.newContext();
+  await ctx.addInitScript(fakeScreen);
+  const page = await ctx.newPage();
+  await page.goto(base);
+  await page.click('#shareBtn');
+  await page.waitForFunction(() => /^\d{3} \d{3} \d{3}$/.test(document.getElementById('myCode').textContent));
+  const code = (await page.textContent('#myCode')).replace(/\s/g, '');
+  const password = await page.textContent('#myPw');
+
+  async function join(name) {
+    const v = await openViewer({ viewport: { width: 1000, height: 700 } });
+    await v.page.evaluate((n) => localStorage.setItem('swipe.settings', JSON.stringify({ deviceName: n })), name);
+    await v.page.reload();
+    await connectViewer(v.page, code, password);
+    await waitForVideo(v.page);
+    return v;
+  }
+  const sam = await join('Sam');
+  const alex = await join('Alex');
+  assert.equal(await sam.page.locator('button[title="Next screen"]').count(), 0);
+
+  await page.click('#addScreenBtn');
+  await sam.page.waitForFunction(() => document.getElementById('remoteVideo').videoWidth === 800, null, { timeout: 15_000 });
+  await sam.page.waitForFunction(() => document.getElementById('screenLabel')?.textContent === 'Screen 2 (2/2)');
+  await sam.page.click('button[title="Next screen"]');
+  for (const v of [sam, alex]) {
+    await v.page.waitForFunction(() => document.getElementById('remoteVideo').videoWidth === 1280, null, { timeout: 15_000 });
+  }
+  assert.equal(await page.textContent('#hostScreens .chip.on'), 'Screen 1');
+
+  // Chat: a viewer writes, the other viewer and the host see it.
+  await sam.page.click('button[title="Chat"]');
+  await sam.page.fill('#viewChatIn', 'hello <i>all</i>');
+  await sam.page.press('#viewChatIn', 'Enter');
+  await page.waitForFunction(() => document.getElementById('hostChat').textContent.includes('Samhello <i>all</i>'));
+  await alex.page.waitForSelector('#chatBadge');
+  assert.equal(await alex.page.textContent('#chatPop'), 'Samhello <i>all</i>');
+  await page.fill('#hostChatIn', 'hi both');
+  await page.press('#hostChatIn', 'Enter');
+  for (const v of [sam, alex]) await v.page.waitForFunction(() => document.getElementById('viewChat').textContent.includes('hi both'));
+  assert.match(await sam.page.textContent('#viewChat'), /Alex joined/);
+
+  await alex.ctx.close();
+  await sam.page.waitForFunction(() => document.getElementById('viewChat').textContent.includes('Alex left'), null, { timeout: 20_000 });
+  await sam.ctx.close();
+  await page.click('#stopShareBtn');
+  await ctx.close();
 });

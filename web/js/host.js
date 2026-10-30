@@ -33,6 +33,7 @@ export class HostSession extends EventTarget {
     this._streamPromise = null;
     this._stopped = true;
     this._retry = 0;
+    this.chat = []; // recent chat, sent to viewers when they join
   }
 
   get control() {
@@ -119,12 +120,24 @@ export class HostSession extends EventTarget {
       control: this.control,
       screens: this.opts.screens?.() || [],
       screen: this.opts.screenId?.() ?? null,
+      chat: true,
     };
   }
 
   broadcastInfo() {
     const info = this.infoMessage();
     for (const v of this.viewers.values()) v.sendCtrl(info);
+  }
+
+  // ---------- chat: the host relays every message to all viewers ----------
+
+  postChat(msg) {
+    const m = { t: 'chat', from: msg.from || '', text: cleanText(msg.text), system: !!msg.system, ts: Date.now() };
+    if (!m.text) return;
+    this.chat.push(m);
+    this.chat = this.chat.slice(-30);
+    for (const v of this.viewers.values()) if (v.authed) v.sendCtrl(m);
+    this.dispatchEvent(new CustomEvent('chat', { detail: m }));
   }
 
   viewerList() {
@@ -163,13 +176,15 @@ export class HostSession extends EventTarget {
   }
 
   // Swap the captured stream (e.g. another monitor) for every viewer.
-  async replaceStream(stream) {
+  // keepOld: the previous stream stays alive (a browser host offering several
+  // captured screens switches between them without asking again).
+  async replaceStream(stream, { keepOld = false } = {}) {
     const old = this.stream;
     this.stream = stream;
     for (const t of stream.getTracks()) t.addEventListener('ended', () => this._onTrackEnded(stream));
     const track = stream.getVideoTracks()[0];
     await Promise.all([...this.viewers.values()].map((v) => v.replaceVideo(track)));
-    if (old && old !== stream) for (const t of old.getTracks()) t.stop();
+    if (old && old !== stream && !keepOld) for (const t of old.getTracks()) t.stop();
     this.broadcastInfo();
   }
 
@@ -278,7 +293,10 @@ class ViewerPeer {
     }
     this.ctrl = pc.createDataChannel('ctrl', { ordered: true });
     this.input = pc.createDataChannel('input', { ordered: false, maxRetransmits: 0 });
-    this.ctrl.onopen = () => this.sendCtrl(host.infoMessage());
+    this.ctrl.onopen = () => {
+      this.sendCtrl(host.infoMessage());
+      this.sendCtrl({ t: 'chatHistory', list: host.chat });
+    };
     for (const ch of [this.ctrl, this.input]) ch.onmessage = (e) => this._onData(e.data);
 
     pc.onicecandidate = (e) => {
@@ -287,6 +305,10 @@ class ViewerPeer {
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
       if (s === 'connected') {
+        if (!this.announced) {
+          this.announced = true;
+          host.postChat({ system: true, text: `${this.name} joined` });
+        }
         this.connected = true;
         this._restarts = 0;
         this.state = 'connected';
@@ -351,6 +373,12 @@ class ViewerPeer {
       if (this.host.control !== 'none') this.host.opts.onInput?.(m, this);
     } else if (m.t === 'screen') {
       this.host.dispatchEvent(new CustomEvent('screenrequest', { detail: m.id }));
+    } else if (m.t === 'chat' && this.authed) {
+      const now = Date.now();
+      this._chatTimes = (this._chatTimes || []).filter((t) => now - t < 5000);
+      if (this._chatTimes.length >= 5) return; // slow down floods
+      this._chatTimes.push(now);
+      this.host.postChat({ from: this.name, text: m.text });
     }
   }
 
@@ -369,6 +397,7 @@ class ViewerPeer {
     if (this.state === 'closed') return;
     if (sayBye && this.channel) this._secureSend({ type: 'bye' });
     this.state = 'closed';
+    if (this.announced) this.host.postChat({ system: true, text: `${this.name} left` });
     try {
       this.pc?.close();
     } catch {
@@ -380,4 +409,11 @@ class ViewerPeer {
     this.host._emitViewers();
     this.host._maybeReleaseStream();
   }
+}
+
+function cleanText(t, max = 500) {
+  return String(t ?? '')
+    .replace(/[\u0000-\u001f]/g, ' ')
+    .trim()
+    .slice(0, max);
 }

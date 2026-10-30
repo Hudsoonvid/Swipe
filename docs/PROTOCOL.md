@@ -97,7 +97,14 @@ On connection failure the host restarts ICE (new offer) up to 3 times.
 - `ctrl`: reliable and ordered. Carries everything except pointer moves.
 - `input`: unordered, `maxRetransmits: 0`. Carries pointer moves; a late move is useless.
 
-Host → viewer: `{t:"info", name, platform, control, screens:[{id,name}], screen}`. It is sent when `ctrl` opens and again whenever something changes.
+Host → viewer: `{t:"info", name, platform, control, screens:[{id,name}], screen, chat}`. It is sent when `ctrl` opens and again whenever something changes. `chat: true` means the host relays chat (the web and desktop hosts do; the Android and iOS hosts don't yet).
+
+**Chat** (on `ctrl`):
+- viewer → host: `{t:"chat", text}` (up to 500 characters; about 5 messages per 5 seconds per viewer).
+- host → every viewer, the sender included: `{t:"chat", from, text, system, ts}`. `system: true` marks notices like "Sam joined".
+- host → a viewer whose `ctrl` just opened: `{t:"chatHistory", list:[…]}` (the last 30 messages).
+
+Chat text is always shown as plain text, never as HTML.
 
 Viewer → host. Coordinates are normalized `0..1` across the shared screen:
 
@@ -111,6 +118,15 @@ Viewer → host. Coordinates are normalized `0..1` across the shared screen:
 | `{t:"gesture", pts:[[x,y,ms],…]}` | touch hosts: one-finger path; a tap or long press is a path that doesn't move |
 | `{t:"scroll", x, y, dx, dy}` | touch hosts: scroll (performed as a swipe) |
 | `{t:"nav", a}` | touch hosts: `back`, `home`, `recents`, `notifications` |
-| `{t:"screen", id}` | switch to another monitor |
+| `{t:"screen", id}` | switch to another monitor or captured window; the picture changes for every viewer |
+| `{t:"chat", text}` | chat message (see above) |
 
 Hosts ignore input while `control` is `"none"`.
+
+## 5. Single-file edition (`swipe.html`)
+
+`swipe.html` uses the public PeerJS service instead of the Swipe server. PeerJS IDs are `swipe-<code>`. SPAKE2 runs over the PeerJS data connection, with `context = "v=<viewer DTLS fingerprint>|h=<host DTLS fingerprint>"`. The media call must present the same certificates, so the PeerJS service can't get in the middle. Data-connection messages are:
+
+- `pake1`, `pake2`, `pake3`, and `error`.
+- `screens {list, active}` (host → viewer) and `screen {index}` (viewer → host).
+- `chat`, `chatHistory` (as above, keyed by `type` instead of `t`).

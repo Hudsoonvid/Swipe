@@ -13,6 +13,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0b0e14" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Swipe" />
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <title>Swipe</title>
 <style>
   :root { --bg:#0b0e14; --bg2:#121722; --card:#161c28; --line:#262e3d; --text:#e8ecf3; --muted:#8f9bb0; --accent:#4c8dff; --accent2:#7a5cff; --danger:#ff5c6c; --ok:#3ddc97; --warn:#ffb84c; color-scheme: dark; }
@@ -54,6 +58,34 @@
   .overlay { position:absolute; inset:0; display:grid; place-items:center; background:rgba(5,7,12,.75); z-index:3; text-align:center; padding:24px; }
   .spinner { width:40px; height:40px; margin:0 auto 16px; border-radius:50%; border:3px solid rgba(255,255,255,.15); border-top-color:var(--accent); animation:spin .8s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
+  .screens { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:12px 0 4px; }
+  .screens .label { font-size:.85rem; color:var(--muted); font-weight:600; margin-right:4px; }
+  .chip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .chat { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
+  .chat li { font-size:.92rem; line-height:1.35; overflow-wrap:anywhere; }
+  .chat li b { color:#9cc0ff; margin-right:6px; }
+  .chat li.sys { color:var(--muted); font-size:.82rem; font-style:italic; }
+  .chat-form { display:flex; gap:6px; margin-top:8px; }
+  .chat-form input { flex:1; min-width:0; font:inherit; font-size:.95rem; letter-spacing:normal; padding:9px 12px; }
+  .chat-form button { flex:none; padding:9px 14px; }
+  .host-chat { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+  .host-chat h3 { margin:0 0 8px; font-size:.95rem; }
+  .host-chat .chat { max-height:220px; min-height:40px; }
+  .chat-panel { position:absolute; right:8px; top:60px; bottom:8px; width:min(340px, calc(100% - 16px)); display:flex; flex-direction:column; padding:12px; border-radius:14px; background:rgba(18,23,34,.94); border:1px solid rgba(255,255,255,.08); z-index:4; }
+  .chat-panel header { display:flex; justify-content:space-between; align-items:center; font-weight:700; margin-bottom:8px; }
+  .chat-panel header button { border:0; background:none; color:var(--text); font-size:1.1rem; cursor:pointer; padding:2px 8px; }
+  .chat-panel .chat { flex:1; }
+  .chat-pop { position:absolute; right:12px; bottom:16px; max-width:min(320px, calc(100% - 24px)); padding:8px 12px; border-radius:12px; background:rgba(18,23,34,.92); border:1px solid rgba(255,255,255,.1); font-size:.9rem; z-index:3; overflow-wrap:anywhere; }
+  .chat-pop b { color:#9cc0ff; margin-right:6px; }
+  .badge { display:inline-block; min-width:18px; padding:0 5px; margin-left:4px; border-radius:9px; background:var(--danger); color:#fff; font-size:.75rem; line-height:18px; }
+  .screen-label { align-self:center; padding:0 4px; font-size:.85rem; font-weight:600; white-space:nowrap; }
+  .short { display:none; }
+  @media (max-width:600px) {
+    .chat-panel { top:auto; height:55%; left:8px; right:8px; width:auto; }
+    .bar { max-width:calc(100% - 16px); overflow-x:auto; gap:0; }
+    .bar button { min-width:38px; padding:0 9px; }
+    .long { display:none; } .short { display:inline; }
+  }
   .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); max-width:calc(100% - 32px); padding:10px 16px; border-radius:12px; background:#222b3b; border:1px solid var(--line); z-index:50; font-size:.92rem; }
 </style>
 </head>
@@ -69,6 +101,8 @@
         <input id="codeIn" inputmode="numeric" placeholder="123 456 789" maxlength="11" />
         <label for="pwIn">Password</label>
         <input id="pwIn" placeholder="ABCD-EFGH" autocapitalize="characters" autocorrect="off" spellcheck="false" />
+        <label for="nameIn">Your name <span class="muted">(shown in chat, optional)</span></label>
+        <input id="nameIn" maxlength="30" placeholder="e.g. Sam" autocomplete="nickname" style="font:inherit;letter-spacing:normal" />
         <button class="btn primary" id="connectBtn" type="submit">Connect</button>
         <p class="error" id="connectErr" hidden></p>
       </form>
@@ -85,6 +119,12 @@
         <div class="cred"><span>Password</span><b id="myPw"></b><button class="chip" id="newPwBtn" type="button">New</button></div>
         <p class="status" id="shareStatus" data-s="busy">Connecting…</p>
         <ul class="viewers" id="viewerList"></ul>
+        <div class="screens" id="hostScreens"></div>
+        <div class="host-chat">
+          <h3>Chat</h3>
+          <ul class="chat" id="hostChat"></ul>
+          <form class="chat-form" id="hostChatForm" autocomplete="off"><input id="hostChatIn" maxlength="500" placeholder="Message everyone watching" /><button class="btn" type="submit">Send</button></form>
+        </div>
         <button class="btn danger" id="stopBtn" type="button">Stop sharing</button>
       </div>
     </section>
@@ -98,12 +138,22 @@
 <div class="session" id="session" hidden>
   <video id="video" playsinline autoplay muted></video>
   <div class="bar">
-    <button class="end" id="endBtn" type="button">Disconnect</button>
+    <button class="end" id="endBtn" type="button" title="Disconnect"><span class="long">Disconnect</span><span class="short">✕</span></button>
+    <button id="prevScreenBtn" type="button" title="Previous screen" hidden>◀</button>
+    <span class="screen-label" id="screenLabel" hidden></span>
+    <button id="nextScreenBtn" type="button" title="Next screen" hidden>▶</button>
+    <button id="chatBtn" type="button">Chat<span class="badge" id="chatBadge" hidden></span></button>
     <button id="soundBtn" type="button" hidden>Unmute</button>
-    <button id="fullBtn" type="button">Full screen</button>
+    <button id="fullBtn" type="button" title="Full screen"><span class="long">Full screen</span><span class="short">⛶</span></button>
     <button id="statsBtn" type="button">Stats</button>
   </div>
   <div class="stats" id="stats" hidden></div>
+  <aside class="chat-panel" id="chatPanel" hidden>
+    <header>Chat<button id="chatCloseBtn" type="button" aria-label="Close chat">✕</button></header>
+    <ul class="chat" id="viewChat"></ul>
+    <form class="chat-form" id="viewChatForm" autocomplete="off"><input id="viewChatIn" maxlength="500" placeholder="Message everyone" /><button class="btn" type="submit">Send</button></form>
+  </aside>
+  <div class="chat-pop" id="chatPop" hidden></div>
   <div class="overlay" id="overlay"><div><div class="spinner"></div><p id="overlayText">Connecting…</p><button class="btn" id="cancelBtn" type="button">Cancel</button></div></div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -202,7 +252,28 @@ function preferH264(sdp) {
 
 // ---------- sharing ----------
 
-const host = { peer: null, stream: null, code: '', password: '', viewers: new Map(), failures: [], lockedUntil: 0 };
+const host = { peer: null, screens: [], active: 0, code: '', password: '', viewers: new Map(), failures: [], lockedUntil: 0, chat: [] };
+
+// ---------- shared chat helpers ----------
+
+function chatLine(msg) {
+  const li = document.createElement('li');
+  if (msg.system) {
+    li.className = 'sys';
+    li.textContent = msg.text;
+  } else {
+    const b = document.createElement('b');
+    b.textContent = msg.from;
+    li.append(b, document.createTextNode(msg.text));
+  }
+  return li;
+}
+function appendChat(list, msg) {
+  list.append(chatLine(msg));
+  while (list.children.length > 100) list.firstChild.remove();
+  list.scrollTop = list.scrollHeight;
+}
+function cleanText(t, max = 500) { return String(t ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max); }
 
 function newCode() { return String(100000000 + Math.floor(Math.random() * 900000000)); }
 
@@ -213,7 +284,7 @@ async function startSharing() {
     return showErr(err, "This browser can't share its screen (phones and tablets can't). You can still connect to other devices.");
   }
   try {
-    host.stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60, max: 60 } }, audio: true });
+    await captureScreen();
   } catch (e) {
     if (e.name === 'NotAllowedError' && window.top !== window) {
       return showErr(err, 'Screen sharing is blocked inside this page preview. Save the code as swipe.html and open it directly in Chrome, Edge, Firefox or Safari.');
@@ -221,15 +292,134 @@ async function startSharing() {
     if (e.name !== 'NotAllowedError') showErr(err, 'Could not capture the screen: ' + e.message);
     return;
   }
-  const track = host.stream.getVideoTracks()[0];
-  track.contentHint = 'detail';
-  track.addEventListener('ended', stopSharing);
+  host.active = 0;
+  host.chat = [];
+  $('hostChat').replaceChildren();
+  renderScreens();
   host.code = store.get('code') || newCode();
   host.password = generatePassword();
   $('myPw').textContent = formatPassword(host.password);
   $('shareIdle').hidden = true;
   $('shareOn').hidden = false;
   await createHostPeer();
+}
+
+// ---------- several screens ----------
+
+// Asks the browser for one more screen (or window/tab) to offer viewers.
+async function captureScreen() {
+  const first = host.screens.length === 0;
+  const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 60, max: 60 } }, audio: first });
+  const track = stream.getVideoTracks()[0];
+  track.contentHint = 'detail';
+  const surface = track.getSettings?.().displaySurface;
+  const kind = surface === 'window' ? 'Window' : surface === 'browser' ? 'Tab' : 'Screen';
+  const entry = { stream, label: `${kind} ${host.screens.length + 1}` };
+  host.screens.push(entry);
+  track.addEventListener('ended', () => removeScreen(entry));
+  return entry;
+}
+
+function activeStream() { return host.screens[host.active]?.stream; }
+
+async function addScreen() {
+  try {
+    await captureScreen();
+  } catch (e) {
+    if (e.name !== 'NotAllowedError') toast('Could not add that screen: ' + e.message);
+    return;
+  }
+  await switchScreen(host.screens.length - 1);
+  toast('Screen added. Viewers can switch with ◀ ▶.');
+}
+
+function removeScreen(entry) {
+  const i = host.screens.indexOf(entry);
+  if (i < 0) return;
+  entry.stream.getTracks().forEach((t) => t.stop());
+  host.screens.splice(i, 1);
+  if (!host.screens.length) return stopSharing();
+  host.screens.forEach((s, n) => (s.label = s.label.replace(/\d+$/, String(n + 1))));
+  if (i < host.active || host.active >= host.screens.length) host.active = Math.max(0, host.active - 1);
+  switchScreen(host.active, true);
+}
+
+// Shows screen i to every viewer (one picture for everyone).
+async function switchScreen(i, force = false) {
+  if (i < 0 || i >= host.screens.length) return;
+  if (i === host.active && !force && host.viewers.size === 0) return renderScreens();
+  host.active = i;
+  const track = activeStream().getVideoTracks()[0];
+  await Promise.all([...host.viewers.values()].map(async (v) => {
+    const pc = v.call?.peerConnection;
+    const sender = pc?.getTransceivers().find((t) => t.receiver.track?.kind === 'video')?.sender;
+    if (sender) { try { await sender.replaceTrack(track); } catch {} }
+  }));
+  renderScreens();
+  broadcast(screensMsg());
+}
+
+function screensMsg() { return { type: 'screens', list: host.screens.map((s) => s.label), active: host.active }; }
+
+function renderScreens() {
+  const box = $('hostScreens');
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = host.screens.length > 1 ? 'Showing:' : 'Screens:';
+  const buttons = host.screens.map((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip' + (i === host.active ? ' on' : '');
+    b.textContent = s.label;
+    b.onclick = () => switchScreen(i);
+    return b;
+  });
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'chip';
+  add.id = 'addScreenBtn';
+  add.textContent = '+ Add screen';
+  add.onclick = addScreen;
+  box.replaceChildren(label, ...buttons, add);
+}
+
+function broadcast(msg) {
+  for (const v of host.viewers.values()) if (v.authed && v.conn.open) v.conn.send(msg);
+}
+
+// ---------- chat (the host relays every message to everyone) ----------
+
+function postChat(msg) {
+  msg.ts = Date.now();
+  host.chat.push(msg);
+  host.chat = host.chat.slice(-30);
+  broadcast({ type: 'chat', ...msg });
+  appendChat($('hostChat'), msg);
+}
+
+function onViewerChat(v, text) {
+  text = cleanText(text);
+  if (!text) return;
+  const now = Date.now();
+  v.chatTimes = (v.chatTimes || []).filter((t) => now - t < 5000);
+  if (v.chatTimes.length >= 5) return; // slow down floods
+  v.chatTimes.push(now);
+  postChat({ from: v.name, text });
+}
+
+$('hostChatForm').onsubmit = (e) => {
+  e.preventDefault();
+  const text = cleanText($('hostChatIn').value);
+  if (!text) return;
+  postChat({ from: `${deviceName()} (sharing)`, text });
+  $('hostChatIn').value = '';
+};
+
+function uniqueName(name) {
+  const taken = new Set([...host.viewers.values()].filter((v) => v.authed).map((v) => v.name));
+  let n = name;
+  for (let i = 2; taken.has(n); i++) n = `${name} ${i}`;
+  return n;
 }
 
 function setStatus(text, s) { const el = $('shareStatus'); el.textContent = text; el.dataset.s = s; }
@@ -287,6 +477,8 @@ function renderViewers() {
 }
 
 function closeViewer(v) {
+  if (v.authed && host.viewers.get(v.conn.peer) === v) postChat({ system: true, text: `${v.name} left` });
+  v.authed = false;
   v.call?.close();
   v.conn.close();
   host.viewers.delete(v.conn.peer);
@@ -313,6 +505,15 @@ function onViewer(conn) {
       return;
     }
     host.viewers.set(conn.peer, v);
+    // Notice viewers that vanish (closed tab, lost network) within seconds,
+    // rather than waiting for the data channel's long timeout.
+    const pc = conn.peerConnection;
+    let lostTimer;
+    pc?.addEventListener('connectionstatechange', () => {
+      clearTimeout(lostTimer);
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') closeViewer(v);
+      else if (pc.connectionState === 'disconnected') lostTimer = setTimeout(() => pc.connectionState !== 'connected' && closeViewer(v), 4000);
+    });
     // Unauthenticated connections may not linger.
     setTimeout(() => { if (!v.authed) { if (v.state === 'confirm') recordFailure(); closeViewer(v); } }, 60_000);
   });
@@ -320,6 +521,10 @@ function onViewer(conn) {
   conn.on('data', (d) => { queue = queue.then(() => onViewerData(v, d)).catch(() => closeViewer(v)); });
   conn.on('close', () => {
     if (v.state === 'confirm') recordFailure(); // guessed, then left
+    if (v.authed && host.viewers.get(conn.peer) === v) {
+      v.authed = false;
+      postChat({ system: true, text: `${v.name} left` });
+    }
     v.call?.close();
     host.viewers.delete(conn.peer);
     renderViewers();
@@ -349,14 +554,17 @@ async function onViewerData(v, d) {
       setTimeout(() => closeViewer(v), 300);
       return;
     }
+    v.name = uniqueName(cleanText(d.name, 30) || 'Viewer');
     v.state = 'authed';
     v.authed = true;
-    v.name = String(d.name || 'Viewer').slice(0, 40);
     renderViewers();
+    v.conn.send({ type: 'chatHistory', list: host.chat });
+    v.conn.send(screensMsg());
+    postChat({ system: true, text: `${v.name} joined` });
     // Media goes over its own connection, which must use the same viewer
     // certificate the password check was bound to.
     const viewerFp = fingerprint(v.conn.peerConnection.remoteDescription);
-    const call = host.peer.call(v.conn.peer, host.stream, { sdpTransform: preferH264 });
+    const call = host.peer.call(v.conn.peer, activeStream(), { sdpTransform: preferH264 });
     v.call = call;
     const pc = call.peerConnection;
     if (pc) {
@@ -366,6 +574,10 @@ async function onViewerData(v, d) {
       setTimeout(() => tuneSenders(pc), 0);
     }
     call.on('close', () => { if (host.viewers.get(v.conn.peer) === v) closeViewer(v); });
+  } else if (v.authed && d.type === 'chat') {
+    onViewerChat(v, d.text);
+  } else if (v.authed && d.type === 'screen' && Number.isInteger(d.index)) {
+    switchScreen(d.index, true);
   }
 }
 
@@ -386,8 +598,8 @@ function stopSharing() {
   for (const v of [...host.viewers.values()]) closeViewer(v);
   host.peer?.destroy();
   host.peer = null;
-  host.stream?.getTracks().forEach((t) => t.stop());
-  host.stream = null;
+  for (const s of host.screens) s.stream.getTracks().forEach((t) => t.stop());
+  host.screens = [];
   $('shareIdle').hidden = false;
   $('shareOn').hidden = true;
 }
@@ -405,7 +617,72 @@ $('copyBtn').onclick = async () => {
 
 // ---------- viewing ----------
 
-const view = { peer: null, conn: null, call: null, statsTimer: null, prev: {} };
+const view = { peer: null, conn: null, call: null, statsTimer: null, prev: {}, screens: null, unread: 0, authed: false };
+
+$('nameIn').value = store.get('name') || '';
+
+// ---------- viewer: screens ----------
+
+function renderViewScreens() {
+  const sc = view.screens;
+  const many = !!sc && sc.list.length > 1;
+  for (const id of ['prevScreenBtn', 'nextScreenBtn', 'screenLabel']) $(id).hidden = !many;
+  if (many) {
+    const name = sc.list[sc.active] || 'Screen';
+    const pos = `${sc.active + 1}/${sc.list.length}`;
+    $('screenLabel').textContent = matchMedia('(max-width:600px)').matches ? pos : `${name} (${pos})`;
+    $('screenLabel').title = name;
+  }
+}
+function stepScreen(delta) {
+  const sc = view.screens;
+  if (!sc || sc.list.length < 2 || !view.conn?.open) return;
+  view.conn.send({ type: 'screen', index: (sc.active + delta + sc.list.length) % sc.list.length });
+}
+$('prevScreenBtn').onclick = () => stepScreen(-1);
+$('nextScreenBtn').onclick = () => stepScreen(1);
+document.addEventListener('keydown', (e) => {
+  if ($('session').hidden || e.target.closest?.('input, textarea')) return;
+  if (e.key === ']' || e.key === 'PageDown') stepScreen(1);
+  if (e.key === '[' || e.key === 'PageUp') stepScreen(-1);
+});
+
+// ---------- viewer: chat ----------
+
+let popTimer;
+function onViewChat(msg, live = true) {
+  appendChat($('viewChat'), msg);
+  if (!live || !$('chatPanel').hidden || msg.system) return;
+  view.unread++;
+  $('chatBadge').textContent = String(view.unread);
+  $('chatBadge').hidden = false;
+  const pop = $('chatPop');
+  pop.replaceChildren(...chatLine(msg).childNodes);
+  pop.hidden = false;
+  clearTimeout(popTimer);
+  popTimer = setTimeout(() => (pop.hidden = true), 4500);
+}
+function toggleChat(open = $('chatPanel').hidden) {
+  $('chatPanel').hidden = !open;
+  if (open) {
+    view.unread = 0;
+    $('chatBadge').hidden = true;
+    $('chatPop').hidden = true;
+    const list = $('viewChat');
+    list.scrollTop = list.scrollHeight;
+    if (!matchMedia('(pointer: coarse)').matches) $('viewChatIn').focus();
+  }
+}
+$('chatBtn').onclick = () => toggleChat();
+$('chatCloseBtn').onclick = () => toggleChat(false);
+$('chatPop').onclick = () => toggleChat(true);
+$('viewChatForm').onsubmit = (e) => {
+  e.preventDefault();
+  const text = cleanText($('viewChatIn').value);
+  if (!text || !view.conn?.open || !view.authed) return;
+  view.conn.send({ type: 'chat', text }); // the host sends it back to everyone, us included
+  $('viewChatIn').value = '';
+};
 
 $('codeIn').addEventListener('input', (e) => {
   const d = normalizeCode(e.target.value).slice(0, 9);
@@ -461,13 +738,25 @@ async function connect(codeRaw, password) {
     });
     conn.on('data', async (d) => {
       if (d?.type === 'error') return fail(ERRORS[d.error] || d.error);
+      if (authed && d?.type === 'chat') return onViewChat({ from: cleanText(d.from, 60), text: cleanText(d.text), system: !!d.system });
+      if (authed && d?.type === 'chatHistory' && Array.isArray(d.list)) {
+        for (const m of d.list.slice(-30)) onViewChat({ from: cleanText(m.from, 60), text: cleanText(m.text), system: !!m.system }, false);
+        return;
+      }
+      if (authed && d?.type === 'screens' && Array.isArray(d.list)) {
+        view.screens = { list: d.list.map((l) => cleanText(l, 40)), active: Number(d.active) || 0 };
+        return renderViewScreens();
+      }
       if (d?.type !== 'pake2' || !spake) return;
       let confirm;
       try { confirm = await spake.finish(d.Y); } catch { return fail('The other device sent an invalid response.'); }
       const ok = spake.verify(d.confirm);
-      conn.send({ type: 'pake3', confirm, name: deviceName() });
+      const myName = cleanText($('nameIn').value, 30);
+      store.set('name', myName);
+      conn.send({ type: 'pake3', confirm, name: myName || deviceName() });
       if (!ok) return setTimeout(() => fail(ERRORS.auth_failed), 200);
       authed = true;
+      view.authed = true;
       clearTimeout(timer);
       overlay('Starting video…');
     });
@@ -511,6 +800,14 @@ function deviceName() {
 }
 
 function leave() {
+  view.authed = false;
+  view.screens = null;
+  view.unread = 0;
+  renderViewScreens();
+  $('viewChat').replaceChildren();
+  $('chatBadge').hidden = true;
+  $('chatPop').hidden = true;
+  $('chatPanel').hidden = true;
   const { peer } = view;
   view.peer = view.conn = view.call = null;
   peer?.destroy();

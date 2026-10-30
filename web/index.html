@@ -88,6 +88,15 @@
             </details>
             <p class="status" id="shareStatus"></p>
             <ul class="viewers" id="viewerList"></ul>
+            <div class="screens" id="hostScreens" hidden></div>
+            <div class="host-chat">
+              <h3>Chat</h3>
+              <ul class="chat" id="hostChat"></ul>
+              <form class="chat-form" id="hostChatForm" autocomplete="off">
+                <input id="hostChatIn" maxlength="500" placeholder="Message everyone watching" />
+                <button class="btn" type="submit">Send</button>
+              </form>
+            </div>
             <label class="check" id="controlRow"><input type="checkbox" id="allowControl" checked /> Allow connected devices to control this one</label>
             <button class="btn danger" type="button" id="stopShareBtn">Stop sharing</button>
           </div>
@@ -117,6 +126,15 @@
 
       <div id="keysPanel" class="keys-panel" data-ui hidden></div>
       <div id="statsBox" class="stats" data-ui hidden></div>
+      <aside id="chatPanel" class="chat-panel" data-ui hidden>
+        <header>Chat<button type="button" id="chatClose" aria-label="Close chat">✕</button></header>
+        <ul class="chat" id="viewChat"></ul>
+        <form class="chat-form" id="viewChatForm" autocomplete="off">
+          <input id="viewChatIn" maxlength="500" placeholder="Message everyone" />
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </aside>
+      <div id="chatPop" class="chat-pop" data-ui hidden></div>
 
       <div id="overlay" class="overlay" data-ui>
         <div class="overlay-box">

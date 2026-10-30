@@ -17,7 +17,9 @@ concurrency:
 jobs:
   test:
     name: Server, web & desktop tests
-    runs-on: ubuntu-latest
+    # Pinned: the Playwright version used for the browser tests does not
+    # support newer Ubuntu images yet.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

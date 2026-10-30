@@ -42,13 +42,15 @@ async function open(fakeScreen = false) {
   });
   if (fakeScreen) {
     await ctx.addInitScript(() => {
+      let calls = 0;
       navigator.mediaDevices.getDisplayMedia = async () => {
+        // First "screen" is 1280x720, any later one 800x600.
         const c = document.createElement('canvas');
-        c.width = 1280;
-        c.height = 720;
+        c.width = calls ? 800 : 1280;
+        c.height = calls++ ? 600 : 720;
         const g = c.getContext('2d');
         let i = 0;
-        setInterval(() => { g.fillStyle = `hsl(${(i += 9) % 360} 70% 45%)`; g.fillRect(0, 0, 1280, 720); }, 33);
+        setInterval(() => { g.fillStyle = `hsl(${(i += 9) % 360} 70% 45%)`; g.fillRect(0, 0, c.width, c.height); }, 33);
         return c.captureStream(30);
       };
     });
@@ -100,4 +102,62 @@ test('unknown code shows a helpful error', { timeout: 30_000 }, async () => {
   await viewer.page.waitForSelector('#connectErr:not([hidden])', { timeout: 20_000 });
   assert.match(await viewer.page.textContent('#connectErr'), /No device is sharing/);
   await viewer.ctx.close();
+});
+
+test('switch between shared screens and chat with everyone', { timeout: 90_000 }, async () => {
+  const host = await open(true);
+  await host.page.click('#shareBtn');
+  await host.page.waitForFunction(() => document.getElementById('shareStatus').textContent.includes('Waiting'), null, { timeout: 15_000 });
+  const code = (await host.page.textContent('#myCode')).replace(/\s/g, '');
+  const password = await host.page.textContent('#myPw');
+
+  async function join(name) {
+    const v = await open();
+    await v.page.fill('#codeIn', code);
+    await v.page.fill('#pwIn', password);
+    await v.page.fill('#nameIn', name);
+    await v.page.click('#connectBtn');
+    await v.page.waitForFunction(() => document.getElementById('video').videoWidth > 0 && document.getElementById('overlay').hidden, null, { timeout: 30_000 });
+    return v;
+  }
+  const sam = await join('Sam'); // desktop-sized viewport, so labels are long
+  const alex = await join('Alex');
+
+  // Only one screen: no switch buttons yet.
+  assert.equal(await sam.page.isHidden('#nextScreenBtn'), true);
+
+  // Host adds a second screen; it is shown right away and viewers get the buttons.
+  await host.page.click('#addScreenBtn');
+  await sam.page.waitForFunction(() => document.getElementById('video').videoWidth === 800, null, { timeout: 15_000 });
+  await sam.page.waitForSelector('#nextScreenBtn:not([hidden])');
+  assert.equal(await sam.page.textContent('#screenLabel'), 'Screen 2 (2/2)');
+
+  // A viewer taps ▶: everyone moves to the next screen (wraps to Screen 1).
+  await sam.page.click('#nextScreenBtn');
+  for (const v of [sam, alex]) {
+    await v.page.waitForFunction(() => document.getElementById('video').videoWidth === 1280, null, { timeout: 15_000 });
+    await v.page.waitForFunction(() => document.getElementById('screenLabel').textContent === 'Screen 1 (1/2)');
+  }
+  assert.equal(await host.page.textContent('#hostScreens .chip.on'), 'Screen 1');
+
+  // Chat: Sam writes, Alex and the host see it; the host replies to both.
+  await sam.page.click('#chatBtn');
+  await sam.page.fill('#viewChatIn', 'hello <b>everyone</b>');
+  await sam.page.press('#viewChatIn', 'Enter');
+  await host.page.waitForFunction(() => document.getElementById('hostChat').textContent.includes('Samhello <b>everyone</b>'));
+  await alex.page.waitForSelector('#chatBadge:not([hidden])');
+  assert.equal(await alex.page.textContent('#chatPop'), 'Samhello <b>everyone</b>');
+  assert.equal(await alex.page.locator('#viewChat b').count(), 1); // text is not turned into HTML
+  await host.page.fill('#hostChatIn', 'hi both');
+  await host.page.press('#hostChatIn', 'Enter');
+  for (const v of [sam, alex]) {
+    await v.page.waitForFunction(() => document.getElementById('viewChat').textContent.includes('hi both'));
+  }
+  assert.match(await sam.page.textContent('#viewChat'), /Alex joined/);
+
+  // A viewer leaving shows up in chat for everyone else.
+  await alex.ctx.close();
+  await sam.page.waitForFunction(() => document.getElementById('viewChat').textContent.includes('Alex left'), null, { timeout: 15_000 });
+  await sam.ctx.close();
+  await host.ctx.close();
 });

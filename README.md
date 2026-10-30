@@ -6,7 +6,9 @@ Share your screen from any device to any other device: phone to iPad, iPad to PC
 
 ## Fastest way to try it: one HTML file
 
-[`swipe.html`](swipe.html) is the whole thing in a single file, with no server to set up. Paste its contents into any online HTML runner, or save it and open it in Chrome, Edge, Firefox or Safari.
+[`swipe.html`](swipe.html) is the whole thing in a single file, with no server to set up.
+
+**Open it here:** https://hudsoonvid.github.io/Swipe/ (works in Safari on iPhone and iPad, too; use *Share → Add to Home Screen* for an app icon). Paste its contents into any online HTML runner, or save it and open it in Chrome, Edge, Firefox or Safari.
 
 - On the computer you want to share, click **Share my screen**. You get a code and a password.
 - On the other device, open the same page and enter them.
@@ -80,6 +82,10 @@ The code stays the same for each device. The password is random; you can make a 
 - ⌨ opens the on-screen keyboard. The keys panel has Esc, Tab, arrows, sticky Ctrl/Alt/⌘ and *Paste text*.
 
 **Controlling an Android phone:** tap, swipe and long-press map directly, and the toolbar has Back, Home and Recents. Typing goes into the focused text field.
+
+**Several screens:** in the desktop app, every monitor is available automatically. In a browser (including `swipe.html`), click **+ Add screen** while sharing to offer another screen or window. Viewers tap **◀ ▶** in the toolbar to move between them (in `swipe.html`, `[` and `]` work too; in the full app those keys go to the remote computer). The picture changes for everyone watching.
+
+**Chat:** everyone in a session can chat: the person sharing (in the Share card) and every viewer (the chat button in the toolbar). New messages pop up briefly on viewers' screens, and people joining see the last 30 messages. Typing in the chat box never goes to the remote computer. Sessions shared from the Android or iOS apps don't have chat yet.
 
 **Toolbar:** you can also disconnect, pick a monitor (multi-screen computers), reset zoom, go full screen, and show live stats (latency, fps, bitrate, direct or relayed).
 

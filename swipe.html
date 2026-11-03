@@ -80,10 +80,62 @@
   .badge { display:inline-block; min-width:18px; padding:0 5px; margin-left:4px; border-radius:9px; background:var(--danger); color:#fff; font-size:.75rem; line-height:18px; }
   .screen-label { align-self:center; padding:0 4px; font-size:.85rem; font-weight:600; white-space:nowrap; }
   .short { display:none; }
+  /* meeting: people tiles, reactions, pings, menus */
+  .tiles { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom,0px)); display:flex; gap:8px; overflow-x:auto; z-index:2; padding-bottom:2px; justify-content:flex-start; transition:opacity .3s; }
+  .tile { position:relative; flex:none; width:150px; aspect-ratio:16/10; border-radius:12px; overflow:hidden; background:#1b2232; border:2px solid rgba(255,255,255,.08); box-shadow:0 4px 16px rgba(0,0,0,.4); }
+  .tile.speaking { border-color:var(--ok); box-shadow:0 0 0 3px rgba(61,220,151,.35); }
+  .tile video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+  .tile.me video { transform:scaleX(-1); }
+  .tile .avatar { position:absolute; inset:0; display:grid; place-items:center; font-size:1.6rem; font-weight:700; color:#fff; }
+  .tile .avatar span { width:52px; height:52px; border-radius:50%; display:grid; place-items:center; }
+  .tile .name { position:absolute; left:6px; bottom:6px; right:6px; display:flex; gap:4px; align-items:center; font-size:.78rem; font-weight:600; text-shadow:0 1px 3px #000; white-space:nowrap; overflow:hidden; }
+  .tile .name i { font-style:normal; }
+  .people-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .people-grid .tile { width:140px; }
+  .me-controls { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .chip.off { opacity:.75; }
+  .react-layer { position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden; }
+  .react { position:absolute; bottom:70px; font-size:2.2rem; animation:floatUp 3.2s ease-out forwards; text-align:center; }
+  .react small { display:block; font-size:.7rem; font-weight:700; color:#fff; text-shadow:0 1px 3px #000; }
+  @keyframes floatUp { 0% { transform:translateY(0) scale(.6); opacity:0; } 10% { opacity:1; transform:translateY(-20px) scale(1.1); } 100% { transform:translateY(-55vh) scale(1); opacity:0; } }
+  .ping-layer { position:fixed; inset:0; pointer-events:none; z-index:5; }
+  .ping-layer.active { pointer-events:auto; cursor:crosshair; }
+  .ping { position:absolute; width:0; height:0; }
+  .ping::before { content:''; position:absolute; left:-18px; top:-18px; width:36px; height:36px; border-radius:50%; border:3px solid var(--c); animation:ping 1.6s ease-out 2; }
+  .ping::after { content:''; position:absolute; left:-5px; top:-5px; width:10px; height:10px; border-radius:50%; background:var(--c); }
+  .ping b { position:absolute; left:14px; top:8px; padding:2px 6px; border-radius:6px; background:var(--c); color:#000; font-size:.72rem; white-space:nowrap; }
+  @keyframes ping { from { transform:scale(.4); opacity:1; } to { transform:scale(2.2); opacity:0; } }
+  .menu { position:absolute; top:62px; left:50%; transform:translateX(-50%); display:flex; flex-wrap:wrap; justify-content:center; gap:6px; max-width:min(420px, calc(100% - 16px)); padding:10px; border-radius:14px; background:rgba(18,23,34,.95); border:1px solid rgba(255,255,255,.08); z-index:5; }
+  .menu button { border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.06); color:var(--text); border-radius:10px; padding:8px 12px; font:inherit; font-size:.9rem; cursor:pointer; }
+  .menu button.on { background:var(--accent); border-color:var(--accent); }
+  .menu .emoji { font-size:1.6rem; padding:4px 10px; }
+  .menu .sep { flex-basis:100%; height:0; }
+  .menu .hint { flex-basis:100%; color:var(--muted); font-size:.78rem; text-align:center; }
+  .bar button.on { background:rgba(76,141,255,.35); }
+  .bar button.red { color:var(--danger); }
+  .banner { position:absolute; left:50%; top:62px; transform:translateX(-50%); z-index:6; padding:8px 14px; border-radius:12px; background:var(--accent); color:#fff; font-weight:600; border:0; cursor:pointer; }
+  .session.idle .bar, .session.idle .tiles { opacity:0; }
+  .session.idle { cursor:none; }
+  .preview-wrap { position:relative; margin-top:12px; border-radius:12px; overflow:hidden; background:#000; aspect-ratio:16/9; cursor:crosshair; }
+  .preview-wrap video { width:100%; height:100%; object-fit:contain; display:block; }
+  .preview-wrap .tag { position:absolute; left:8px; top:8px; padding:2px 8px; border-radius:8px; background:rgba(0,0,0,.6); font-size:.75rem; font-weight:600; }
+  .invite { display:flex; gap:12px; align-items:center; margin-top:12px; padding:12px; border-radius:14px; background:var(--bg2); border:1px solid var(--line); }
+  .invite .qr { width:96px; height:96px; flex:none; background:#fff; border-radius:8px; padding:5px; }
+  .invite .qr svg { width:100%; height:100%; display:block; }
+  .invite .actions { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .invite .actions .muted { font-size:.8rem; }
+  :focus-visible { outline:3px solid #9cc0ff; outline-offset:2px; }
+  /* Compact icon toolbar on touch screens and smaller windows. */
+  @media (max-width:900px), (pointer:coarse) {
+    .long { display:none; } .short { display:inline; }
+    .bar { max-width:calc(100% - 16px); overflow-x:auto; }
+  }
   @media (max-width:600px) {
     .chat-panel { top:auto; height:55%; left:8px; right:8px; width:auto; }
     .bar { max-width:calc(100% - 16px); overflow-x:auto; gap:0; }
     .bar button { min-width:38px; padding:0 9px; }
+    .tile { width:110px; }
+    .menu { top:auto; bottom:80px; }
     .long { display:none; } .short { display:inline; }
   }
   .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); max-width:calc(100% - 32px); padding:10px 16px; border-radius:12px; background:#222b3b; border:1px solid var(--line); z-index:50; font-size:.92rem; }
@@ -119,7 +171,28 @@
         <div class="cred"><span>Password</span><b id="myPw"></b><button class="chip" id="newPwBtn" type="button">New</button></div>
         <p class="status" id="shareStatus" data-s="busy">Connecting…</p>
         <ul class="viewers" id="viewerList"></ul>
+        <div class="invite" id="invite" hidden>
+          <div class="qr" id="inviteQr"></div>
+          <div class="actions">
+            <button class="chip" id="copyLinkBtn" type="button">Copy invite link</button>
+            <label class="muted small" style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="linkPw" style="width:auto" /> Include password (joins in one tap)</label>
+            <span class="muted">Scan with a phone, tablet or TV camera to join.</span>
+          </div>
+        </div>
+        <div class="preview-wrap" id="previewWrap" title="Click to point at something for everyone">
+          <video id="hostPreview" muted playsinline autoplay></video>
+          <span class="tag">What everyone sees · click to point</span>
+        </div>
         <div class="screens" id="hostScreens"></div>
+        <div class="host-chat">
+          <h3>People</h3>
+          <div class="me-controls">
+            <button class="chip off" id="hostMicBtn" type="button">🎤 Mic off</button>
+            <button class="chip off" id="hostCamBtn" type="button">📷 Camera off</button>
+            <button class="chip" id="hostReactBtn" type="button">😀 React</button>
+          </div>
+          <div class="people-grid" id="hostPeople"></div>
+        </div>
         <div class="host-chat">
           <h3>Chat</h3>
           <ul class="chat" id="hostChat"></ul>
@@ -142,12 +215,32 @@
     <button id="prevScreenBtn" type="button" title="Previous screen" hidden>◀</button>
     <span class="screen-label" id="screenLabel" hidden></span>
     <button id="nextScreenBtn" type="button" title="Next screen" hidden>▶</button>
-    <button id="chatBtn" type="button">Chat<span class="badge" id="chatBadge" hidden></span></button>
+    <button id="micBtn" type="button" title="Microphone (M)">🎤<span class="long"> Mic</span></button>
+    <button id="camBtn" type="button" title="Camera (V)">📷<span class="long"> Camera</span></button>
+    <button id="handBtn" type="button" title="Raise hand (H)">✋</button>
+    <button id="reactBtn" type="button" title="Reactions">😀</button>
+    <button id="pointBtn" type="button" title="Point at the screen (P)">👆<span class="long"> Point</span></button>
+    <button id="chatBtn" type="button" title="Chat (C)">💬<span class="long"> Chat</span><span class="badge" id="chatBadge" hidden></span></button>
     <button id="soundBtn" type="button" hidden>Unmute</button>
     <button id="fullBtn" type="button" title="Full screen"><span class="long">Full screen</span><span class="short">⛶</span></button>
-    <button id="statsBtn" type="button">Stats</button>
+    <button id="moreBtn" type="button" title="More">⋯</button>
   </div>
   <div class="stats" id="stats" hidden></div>
+  <div class="ping-layer" id="pingLayer"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="menu" id="reactMenu" hidden></div>
+  <div class="menu" id="moreMenu" hidden>
+    <button id="pipBtn" type="button">⧉ Picture-in-picture</button>
+    <button id="peopleBtn" type="button">👥 Hide people</button>
+    <button id="statsBtn" type="button">📊 Stats</button>
+    <span class="sep"></span>
+    <span class="hint">Quality</span>
+    <button data-q="auto" class="on" type="button">Auto</button>
+    <button data-q="saver" type="button">Data saver</button>
+    <button data-q="sharp" type="button">Sharpest</button>
+    <span class="hint">Keys: F full screen · M mic · V camera · H hand · P point · C chat · [ ] screens</span>
+  </div>
+  <button class="banner" id="soundBanner" type="button" hidden>🔈 Tap to hear everyone</button>
   <aside class="chat-panel" id="chatPanel" hidden>
     <header>Chat<button id="chatCloseBtn" type="button" aria-label="Close chat">✕</button></header>
     <ul class="chat" id="viewChat"></ul>
@@ -157,6 +250,8 @@
   <div class="overlay" id="overlay"><div><div class="spinner"></div><p id="overlayText">Connecting…</p><button class="btn" id="cancelBtn" type="button">Cancel</button></div></div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="react-layer" id="reactLayer"></div>
+<div class="ping-layer" id="hostPingLayer"></div>
 
 <script>
 // Swipe pairing crypto.
@@ -497,6 +592,2244 @@ class SecureChannel {
 
 </script>
 <script>
+//---------------------------------------------------------------------
+//
+// QR Code Generator for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
+// The word 'QR Code' is registered trademark of
+// DENSO WAVE INCORPORATED
+//  http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+
+//---------------------------------------------------------------------
+// qrcode
+//---------------------------------------------------------------------
+
+/**
+ * qrcode
+ * @param typeNumber 1 to 40
+ * @param errorCorrectionLevel 'L','M','Q','H'
+ */
+var qrcode = function(typeNumber, errorCorrectionLevel) {
+
+  const PAD0 = 0xEC;
+  const PAD1 = 0x11;
+
+  let _typeNumber = typeNumber;
+  const _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+  let _modules = null;
+  let _moduleCount = 0;
+  let _dataCache = null;
+  const _dataList = [];
+
+  const _this = {};
+
+  const makeImpl = function(test, maskPattern) {
+
+    _moduleCount = _typeNumber * 4 + 17;
+    _modules = function(moduleCount) {
+      const modules = new Array(moduleCount);
+      for (let row = 0; row < moduleCount; row += 1) {
+        modules[row] = new Array(moduleCount);
+        for (let col = 0; col < moduleCount; col += 1) {
+          modules[row][col] = null;
+        }
+      }
+      return modules;
+    }(_moduleCount);
+
+    setupPositionProbePattern(0, 0);
+    setupPositionProbePattern(_moduleCount - 7, 0);
+    setupPositionProbePattern(0, _moduleCount - 7);
+    setupPositionAdjustPattern();
+    setupTimingPattern();
+    setupTypeInfo(test, maskPattern);
+
+    if (_typeNumber >= 7) {
+      setupTypeNumber(test);
+    }
+
+    if (_dataCache == null) {
+      _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+    }
+
+    mapData(_dataCache, maskPattern);
+  };
+
+  const setupPositionProbePattern = function(row, col) {
+
+    for (let r = -1; r <= 7; r += 1) {
+
+      if (row + r <= -1 || _moduleCount <= row + r) continue;
+
+      for (let c = -1; c <= 7; c += 1) {
+
+        if (col + c <= -1 || _moduleCount <= col + c) continue;
+
+        if ( (0 <= r && r <= 6 && (c == 0 || c == 6) )
+            || (0 <= c && c <= 6 && (r == 0 || r == 6) )
+            || (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+          _modules[row + r][col + c] = true;
+        } else {
+          _modules[row + r][col + c] = false;
+        }
+      }
+    }
+  };
+
+  const getBestMaskPattern = function() {
+
+    let minLostPoint = 0;
+    let pattern = 0;
+
+    for (let i = 0; i < 8; i += 1) {
+
+      makeImpl(true, i);
+
+      const lostPoint = QRUtil.getLostPoint(_this);
+
+      if (i == 0 || minLostPoint > lostPoint) {
+        minLostPoint = lostPoint;
+        pattern = i;
+      }
+    }
+
+    return pattern;
+  };
+
+  const setupTimingPattern = function() {
+
+    for (let r = 8; r < _moduleCount - 8; r += 1) {
+      if (_modules[r][6] != null) {
+        continue;
+      }
+      _modules[r][6] = (r % 2 == 0);
+    }
+
+    for (let c = 8; c < _moduleCount - 8; c += 1) {
+      if (_modules[6][c] != null) {
+        continue;
+      }
+      _modules[6][c] = (c % 2 == 0);
+    }
+  };
+
+  const setupPositionAdjustPattern = function() {
+
+    const pos = QRUtil.getPatternPosition(_typeNumber);
+
+    for (let i = 0; i < pos.length; i += 1) {
+
+      for (let j = 0; j < pos.length; j += 1) {
+
+        const row = pos[i];
+        const col = pos[j];
+
+        if (_modules[row][col] != null) {
+          continue;
+        }
+
+        for (let r = -2; r <= 2; r += 1) {
+
+          for (let c = -2; c <= 2; c += 1) {
+
+            if (r == -2 || r == 2 || c == -2 || c == 2
+                || (r == 0 && c == 0) ) {
+              _modules[row + r][col + c] = true;
+            } else {
+              _modules[row + r][col + c] = false;
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const setupTypeNumber = function(test) {
+
+    const bits = QRUtil.getBCHTypeNumber(_typeNumber);
+
+    for (let i = 0; i < 18; i += 1) {
+      const mod = (!test && ( (bits >> i) & 1) == 1);
+      _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+    }
+
+    for (let i = 0; i < 18; i += 1) {
+      const mod = (!test && ( (bits >> i) & 1) == 1);
+      _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+    }
+  };
+
+  const setupTypeInfo = function(test, maskPattern) {
+
+    const data = (_errorCorrectionLevel << 3) | maskPattern;
+    const bits = QRUtil.getBCHTypeInfo(data);
+
+    // vertical
+    for (let i = 0; i < 15; i += 1) {
+
+      const mod = (!test && ( (bits >> i) & 1) == 1);
+
+      if (i < 6) {
+        _modules[i][8] = mod;
+      } else if (i < 8) {
+        _modules[i + 1][8] = mod;
+      } else {
+        _modules[_moduleCount - 15 + i][8] = mod;
+      }
+    }
+
+    // horizontal
+    for (let i = 0; i < 15; i += 1) {
+
+      const mod = (!test && ( (bits >> i) & 1) == 1);
+
+      if (i < 8) {
+        _modules[8][_moduleCount - i - 1] = mod;
+      } else if (i < 9) {
+        _modules[8][15 - i - 1 + 1] = mod;
+      } else {
+        _modules[8][15 - i - 1] = mod;
+      }
+    }
+
+    // fixed module
+    _modules[_moduleCount - 8][8] = (!test);
+  };
+
+  const mapData = function(data, maskPattern) {
+
+    let inc = -1;
+    let row = _moduleCount - 1;
+    let bitIndex = 7;
+    let byteIndex = 0;
+    const maskFunc = QRUtil.getMaskFunction(maskPattern);
+
+    for (let col = _moduleCount - 1; col > 0; col -= 2) {
+
+      if (col == 6) col -= 1;
+
+      while (true) {
+
+        for (let c = 0; c < 2; c += 1) {
+
+          if (_modules[row][col - c] == null) {
+
+            let dark = false;
+
+            if (byteIndex < data.length) {
+              dark = ( ( (data[byteIndex] >>> bitIndex) & 1) == 1);
+            }
+
+            const mask = maskFunc(row, col - c);
+
+            if (mask) {
+              dark = !dark;
+            }
+
+            _modules[row][col - c] = dark;
+            bitIndex -= 1;
+
+            if (bitIndex == -1) {
+              byteIndex += 1;
+              bitIndex = 7;
+            }
+          }
+        }
+
+        row += inc;
+
+        if (row < 0 || _moduleCount <= row) {
+          row -= inc;
+          inc = -inc;
+          break;
+        }
+      }
+    }
+  };
+
+  const createBytes = function(buffer, rsBlocks) {
+
+    let offset = 0;
+
+    let maxDcCount = 0;
+    let maxEcCount = 0;
+
+    const dcdata = new Array(rsBlocks.length);
+    const ecdata = new Array(rsBlocks.length);
+
+    for (let r = 0; r < rsBlocks.length; r += 1) {
+
+      const dcCount = rsBlocks[r].dataCount;
+      const ecCount = rsBlocks[r].totalCount - dcCount;
+
+      maxDcCount = Math.max(maxDcCount, dcCount);
+      maxEcCount = Math.max(maxEcCount, ecCount);
+
+      dcdata[r] = new Array(dcCount);
+
+      for (let i = 0; i < dcdata[r].length; i += 1) {
+        dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
+      }
+      offset += dcCount;
+
+      const rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+      const rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+      const modPoly = rawPoly.mod(rsPoly);
+      ecdata[r] = new Array(rsPoly.getLength() - 1);
+      for (let i = 0; i < ecdata[r].length; i += 1) {
+        const modIndex = i + modPoly.getLength() - ecdata[r].length;
+        ecdata[r][i] = (modIndex >= 0)? modPoly.getAt(modIndex) : 0;
+      }
+    }
+
+    let totalCodeCount = 0;
+    for (let i = 0; i < rsBlocks.length; i += 1) {
+      totalCodeCount += rsBlocks[i].totalCount;
+    }
+
+    const data = new Array(totalCodeCount);
+    let index = 0;
+
+    for (let i = 0; i < maxDcCount; i += 1) {
+      for (let r = 0; r < rsBlocks.length; r += 1) {
+        if (i < dcdata[r].length) {
+          data[index] = dcdata[r][i];
+          index += 1;
+        }
+      }
+    }
+
+    for (let i = 0; i < maxEcCount; i += 1) {
+      for (let r = 0; r < rsBlocks.length; r += 1) {
+        if (i < ecdata[r].length) {
+          data[index] = ecdata[r][i];
+          index += 1;
+        }
+      }
+    }
+
+    return data;
+  };
+
+  const createData = function(typeNumber, errorCorrectionLevel, dataList) {
+
+    const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+
+    const buffer = qrBitBuffer();
+
+    for (let i = 0; i < dataList.length; i += 1) {
+      const data = dataList[i];
+      buffer.put(data.getMode(), 4);
+      buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+      data.write(buffer);
+    }
+
+    // calc num max data.
+    let totalDataCount = 0;
+    for (let i = 0; i < rsBlocks.length; i += 1) {
+      totalDataCount += rsBlocks[i].dataCount;
+    }
+
+    if (buffer.getLengthInBits() > totalDataCount * 8) {
+      throw 'code length overflow. ('
+        + buffer.getLengthInBits()
+        + '>'
+        + totalDataCount * 8
+        + ')';
+    }
+
+    // end code
+    if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+      buffer.put(0, 4);
+    }
+
+    // padding
+    while (buffer.getLengthInBits() % 8 != 0) {
+      buffer.putBit(false);
+    }
+
+    // padding
+    while (true) {
+
+      if (buffer.getLengthInBits() >= totalDataCount * 8) {
+        break;
+      }
+      buffer.put(PAD0, 8);
+
+      if (buffer.getLengthInBits() >= totalDataCount * 8) {
+        break;
+      }
+      buffer.put(PAD1, 8);
+    }
+
+    return createBytes(buffer, rsBlocks);
+  };
+
+  _this.addData = function(data, mode) {
+
+    mode = mode || 'Byte';
+
+    let newData = null;
+
+    switch(mode) {
+    case 'Numeric' :
+      newData = qrNumber(data);
+      break;
+    case 'Alphanumeric' :
+      newData = qrAlphaNum(data);
+      break;
+    case 'Byte' :
+      newData = qr8BitByte(data);
+      break;
+    case 'Kanji' :
+      newData = qrKanji(data);
+      break;
+    default :
+      throw 'mode:' + mode;
+    }
+
+    _dataList.push(newData);
+    _dataCache = null;
+  };
+
+  _this.isDark = function(row, col) {
+    if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+      throw row + ',' + col;
+    }
+    return _modules[row][col];
+  };
+
+  _this.getModuleCount = function() {
+    return _moduleCount;
+  };
+
+  _this.make = function() {
+    if (_typeNumber < 1) {
+      let typeNumber = 1;
+
+      for (; typeNumber < 40; typeNumber++) {
+        const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+        const buffer = qrBitBuffer();
+
+        for (let i = 0; i < _dataList.length; i++) {
+          const data = _dataList[i];
+          buffer.put(data.getMode(), 4);
+          buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+          data.write(buffer);
+        }
+
+        let totalDataCount = 0;
+        for (let i = 0; i < rsBlocks.length; i++) {
+          totalDataCount += rsBlocks[i].dataCount;
+        }
+
+        if (buffer.getLengthInBits() <= totalDataCount * 8) {
+          break;
+        }
+      }
+
+      _typeNumber = typeNumber;
+    }
+
+    makeImpl(false, getBestMaskPattern() );
+  };
+
+  _this.createTableTag = function(cellSize, margin) {
+
+    cellSize = cellSize || 2;
+    margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+    let qrHtml = '';
+
+    qrHtml += '<table style="';
+    qrHtml += ' border-width: 0px; border-style: none;';
+    qrHtml += ' border-collapse: collapse;';
+    qrHtml += ' padding: 0px; margin: ' + margin + 'px;';
+    qrHtml += '">';
+    qrHtml += '<tbody>';
+
+    for (let r = 0; r < _this.getModuleCount(); r += 1) {
+
+      qrHtml += '<tr>';
+
+      for (let c = 0; c < _this.getModuleCount(); c += 1) {
+        qrHtml += '<td style="';
+        qrHtml += ' border-width: 0px; border-style: none;';
+        qrHtml += ' border-collapse: collapse;';
+        qrHtml += ' padding: 0px; margin: 0px;';
+        qrHtml += ' width: ' + cellSize + 'px;';
+        qrHtml += ' height: ' + cellSize + 'px;';
+        qrHtml += ' background-color: ';
+        qrHtml += _this.isDark(r, c)? '#000000' : '#ffffff';
+        qrHtml += ';';
+        qrHtml += '"/>';
+      }
+
+      qrHtml += '</tr>';
+    }
+
+    qrHtml += '</tbody>';
+    qrHtml += '</table>';
+
+    return qrHtml;
+  };
+
+  _this.createSvgTag = function(cellSize, margin, alt, title) {
+
+    let opts = {};
+    if (typeof arguments[0] == 'object') {
+      // Called by options.
+      opts = arguments[0];
+      // overwrite cellSize and margin.
+      cellSize = opts.cellSize;
+      margin = opts.margin;
+      alt = opts.alt;
+      title = opts.title;
+    }
+
+    cellSize = cellSize || 2;
+    margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+    // Compose alt property surrogate
+    alt = (typeof alt === 'string') ? {text: alt} : alt || {};
+    alt.text = alt.text || null;
+    alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+
+    // Compose title property surrogate
+    title = (typeof title === 'string') ? {text: title} : title || {};
+    title.text = title.text || null;
+    title.id = (title.text) ? title.id || 'qrcode-title' : null;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+    let c, mc, r, mr, qrSvg='', rect;
+
+    rect = 'l' + cellSize + ',0 0,' + cellSize +
+      ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
+
+    qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+    qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
+    qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
+    qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+    qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
+        escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+    qrSvg += '>';
+    qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+        escapeXml(title.text) + '</title>' : '';
+    qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+        escapeXml(alt.text) + '</description>' : '';
+    qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+    qrSvg += '<path d="';
+
+    for (r = 0; r < _this.getModuleCount(); r += 1) {
+      mr = r * cellSize + margin;
+      for (c = 0; c < _this.getModuleCount(); c += 1) {
+        if (_this.isDark(r, c) ) {
+          mc = c*cellSize+margin;
+          qrSvg += 'M' + mc + ',' + mr + rect;
+        }
+      }
+    }
+
+    qrSvg += '" stroke="transparent" fill="black"/>';
+    qrSvg += '</svg>';
+
+    return qrSvg;
+  };
+
+  _this.createDataURL = function(cellSize, margin) {
+
+    cellSize = cellSize || 2;
+    margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+    const min = margin;
+    const max = size - margin;
+
+    return createDataURL(size, size, function(x, y) {
+      if (min <= x && x < max && min <= y && y < max) {
+        const c = Math.floor( (x - min) / cellSize);
+        const r = Math.floor( (y - min) / cellSize);
+        return _this.isDark(r, c)? 0 : 1;
+      } else {
+        return 1;
+      }
+    } );
+  };
+
+  _this.createImgTag = function(cellSize, margin, alt) {
+
+    cellSize = cellSize || 2;
+    margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+
+    let img = '';
+    img += '<img';
+    img += '\u0020src="';
+    img += _this.createDataURL(cellSize, margin);
+    img += '"';
+    img += '\u0020width="';
+    img += size;
+    img += '"';
+    img += '\u0020height="';
+    img += size;
+    img += '"';
+    if (alt) {
+      img += '\u0020alt="';
+      img += escapeXml(alt);
+      img += '"';
+    }
+    img += '/>';
+
+    return img;
+  };
+
+  const escapeXml = function(s) {
+    let escaped = '';
+    for (let i = 0; i < s.length; i += 1) {
+      const c = s.charAt(i);
+      switch(c) {
+      case '<': escaped += '&lt;'; break;
+      case '>': escaped += '&gt;'; break;
+      case '&': escaped += '&amp;'; break;
+      case '"': escaped += '&quot;'; break;
+      default : escaped += c; break;
+      }
+    }
+    return escaped;
+  };
+
+  const _createHalfASCII = function(margin) {
+    const cellSize = 1;
+    margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+    const min = margin;
+    const max = size - margin;
+
+    let y, x, r1, r2, p;
+
+    const blocks = {
+      '██': '█',
+      '█ ': '▀',
+      ' █': '▄',
+      '  ': ' '
+    };
+
+    const blocksLastLineNoMargin = {
+      '██': '▀',
+      '█ ': '▀',
+      ' █': ' ',
+      '  ': ' '
+    };
+
+    let ascii = '';
+    for (y = 0; y < size; y += 2) {
+      r1 = Math.floor((y - min) / cellSize);
+      r2 = Math.floor((y + 1 - min) / cellSize);
+      for (x = 0; x < size; x += 1) {
+        p = '█';
+
+        if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+          p = ' ';
+        }
+
+        if (min <= x && x < max && min <= y+1 && y+1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+          p += ' ';
+        }
+        else {
+          p += '█';
+        }
+
+        // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+        ascii += (margin < 1 && y+1 >= max) ? blocksLastLineNoMargin[p] : blocks[p];
+      }
+
+      ascii += '\n';
+    }
+
+    if (size % 2 && margin > 0) {
+      return ascii.substring(0, ascii.length - size - 1) + Array(size+1).join('▀');
+    }
+
+    return ascii.substring(0, ascii.length-1);
+  };
+
+  _this.createASCII = function(cellSize, margin) {
+    cellSize = cellSize || 1;
+
+    if (cellSize < 2) {
+      return _createHalfASCII(margin);
+    }
+
+    cellSize -= 1;
+    margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+    const min = margin;
+    const max = size - margin;
+
+    let y, x, r, p;
+
+    const white = Array(cellSize+1).join('██');
+    const black = Array(cellSize+1).join('  ');
+
+    let ascii = '';
+    let line = '';
+    for (y = 0; y < size; y += 1) {
+      r = Math.floor( (y - min) / cellSize);
+      line = '';
+      for (x = 0; x < size; x += 1) {
+        p = 1;
+
+        if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+          p = 0;
+        }
+
+        // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+        line += p ? white : black;
+      }
+
+      for (r = 0; r < cellSize; r += 1) {
+        ascii += line + '\n';
+      }
+    }
+
+    return ascii.substring(0, ascii.length-1);
+  };
+
+  _this.renderTo2dContext = function(context, cellSize) {
+    cellSize = cellSize || 2;
+    const length = _this.getModuleCount();
+    for (let row = 0; row < length; row++) {
+      for (let col = 0; col < length; col++) {
+        context.fillStyle = _this.isDark(row, col) ? 'black' : 'white';
+        context.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qrcode.stringToBytes
+//---------------------------------------------------------------------
+
+qrcode.stringToBytes = function(s) {
+  const bytes = [];
+  for (let i = 0; i < s.length; i += 1) {
+    const c = s.charCodeAt(i);
+    bytes.push(c & 0xff);
+  }
+  return bytes;
+};
+
+//---------------------------------------------------------------------
+// qrcode.createStringToBytes
+//---------------------------------------------------------------------
+
+/**
+ * @param unicodeData base64 string of byte array.
+ * [16bit Unicode],[16bit Bytes], ...
+ * @param numChars
+ */
+qrcode.createStringToBytes = function(unicodeData, numChars) {
+
+  // create conversion map.
+
+  const unicodeMap = function() {
+
+    const bin = base64DecodeInputStream(unicodeData);
+    const read = function() {
+      const b = bin.read();
+      if (b == -1) throw 'eof';
+      return b;
+    };
+
+    let count = 0;
+    const unicodeMap = {};
+    while (true) {
+      const b0 = bin.read();
+      if (b0 == -1) break;
+      const b1 = read();
+      const b2 = read();
+      const b3 = read();
+      const k = String.fromCharCode( (b0 << 8) | b1);
+      const v = (b2 << 8) | b3;
+      unicodeMap[k] = v;
+      count += 1;
+    }
+    if (count != numChars) {
+      throw count + ' != ' + numChars;
+    }
+
+    return unicodeMap;
+  }();
+
+  const unknownChar = '?'.charCodeAt(0);
+
+  return function(s) {
+    const bytes = [];
+    for (let i = 0; i < s.length; i += 1) {
+      const c = s.charCodeAt(i);
+      if (c < 128) {
+        bytes.push(c);
+      } else {
+        const b = unicodeMap[s.charAt(i)];
+        if (typeof b == 'number') {
+          if ( (b & 0xff) == b) {
+            // 1byte
+            bytes.push(b);
+          } else {
+            // 2bytes
+            bytes.push(b >>> 8);
+            bytes.push(b & 0xff);
+          }
+        } else {
+          bytes.push(unknownChar);
+        }
+      }
+    }
+    return bytes;
+  };
+};
+
+//---------------------------------------------------------------------
+// QRMode
+//---------------------------------------------------------------------
+
+const QRMode = {
+  MODE_NUMBER :    1 << 0,
+  MODE_ALPHA_NUM : 1 << 1,
+  MODE_8BIT_BYTE : 1 << 2,
+  MODE_KANJI :     1 << 3
+};
+
+//---------------------------------------------------------------------
+// QRErrorCorrectionLevel
+//---------------------------------------------------------------------
+
+const QRErrorCorrectionLevel = {
+  L : 1,
+  M : 0,
+  Q : 3,
+  H : 2
+};
+
+//---------------------------------------------------------------------
+// QRMaskPattern
+//---------------------------------------------------------------------
+
+const QRMaskPattern = {
+  PATTERN000 : 0,
+  PATTERN001 : 1,
+  PATTERN010 : 2,
+  PATTERN011 : 3,
+  PATTERN100 : 4,
+  PATTERN101 : 5,
+  PATTERN110 : 6,
+  PATTERN111 : 7
+};
+
+//---------------------------------------------------------------------
+// QRUtil
+//---------------------------------------------------------------------
+
+const QRUtil = function() {
+
+  const PATTERN_POSITION_TABLE = [
+    [],
+    [6, 18],
+    [6, 22],
+    [6, 26],
+    [6, 30],
+    [6, 34],
+    [6, 22, 38],
+    [6, 24, 42],
+    [6, 26, 46],
+    [6, 28, 50],
+    [6, 30, 54],
+    [6, 32, 58],
+    [6, 34, 62],
+    [6, 26, 46, 66],
+    [6, 26, 48, 70],
+    [6, 26, 50, 74],
+    [6, 30, 54, 78],
+    [6, 30, 56, 82],
+    [6, 30, 58, 86],
+    [6, 34, 62, 90],
+    [6, 28, 50, 72, 94],
+    [6, 26, 50, 74, 98],
+    [6, 30, 54, 78, 102],
+    [6, 28, 54, 80, 106],
+    [6, 32, 58, 84, 110],
+    [6, 30, 58, 86, 114],
+    [6, 34, 62, 90, 118],
+    [6, 26, 50, 74, 98, 122],
+    [6, 30, 54, 78, 102, 126],
+    [6, 26, 52, 78, 104, 130],
+    [6, 30, 56, 82, 108, 134],
+    [6, 34, 60, 86, 112, 138],
+    [6, 30, 58, 86, 114, 142],
+    [6, 34, 62, 90, 118, 146],
+    [6, 30, 54, 78, 102, 126, 150],
+    [6, 24, 50, 76, 102, 128, 154],
+    [6, 28, 54, 80, 106, 132, 158],
+    [6, 32, 58, 84, 110, 136, 162],
+    [6, 26, 54, 82, 110, 138, 166],
+    [6, 30, 58, 86, 114, 142, 170]
+  ];
+  const G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+  const G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
+  const G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+
+  const _this = {};
+
+  const getBCHDigit = function(data) {
+    let digit = 0;
+    while (data != 0) {
+      digit += 1;
+      data >>>= 1;
+    }
+    return digit;
+  };
+
+  _this.getBCHTypeInfo = function(data) {
+    let d = data << 10;
+    while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+      d ^= (G15 << (getBCHDigit(d) - getBCHDigit(G15) ) );
+    }
+    return ( (data << 10) | d) ^ G15_MASK;
+  };
+
+  _this.getBCHTypeNumber = function(data) {
+    let d = data << 12;
+    while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+      d ^= (G18 << (getBCHDigit(d) - getBCHDigit(G18) ) );
+    }
+    return (data << 12) | d;
+  };
+
+  _this.getPatternPosition = function(typeNumber) {
+    return PATTERN_POSITION_TABLE[typeNumber - 1];
+  };
+
+  _this.getMaskFunction = function(maskPattern) {
+
+    switch (maskPattern) {
+
+    case QRMaskPattern.PATTERN000 :
+      return function(i, j) { return (i + j) % 2 == 0; };
+    case QRMaskPattern.PATTERN001 :
+      return function(i, j) { return i % 2 == 0; };
+    case QRMaskPattern.PATTERN010 :
+      return function(i, j) { return j % 3 == 0; };
+    case QRMaskPattern.PATTERN011 :
+      return function(i, j) { return (i + j) % 3 == 0; };
+    case QRMaskPattern.PATTERN100 :
+      return function(i, j) { return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 == 0; };
+    case QRMaskPattern.PATTERN101 :
+      return function(i, j) { return (i * j) % 2 + (i * j) % 3 == 0; };
+    case QRMaskPattern.PATTERN110 :
+      return function(i, j) { return ( (i * j) % 2 + (i * j) % 3) % 2 == 0; };
+    case QRMaskPattern.PATTERN111 :
+      return function(i, j) { return ( (i * j) % 3 + (i + j) % 2) % 2 == 0; };
+
+    default :
+      throw 'bad maskPattern:' + maskPattern;
+    }
+  };
+
+  _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+    let a = qrPolynomial([1], 0);
+    for (let i = 0; i < errorCorrectLength; i += 1) {
+      a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0) );
+    }
+    return a;
+  };
+
+  _this.getLengthInBits = function(mode, type) {
+
+    if (1 <= type && type < 10) {
+
+      // 1 - 9
+
+      switch(mode) {
+      case QRMode.MODE_NUMBER    : return 10;
+      case QRMode.MODE_ALPHA_NUM : return 9;
+      case QRMode.MODE_8BIT_BYTE : return 8;
+      case QRMode.MODE_KANJI     : return 8;
+      default :
+        throw 'mode:' + mode;
+      }
+
+    } else if (type < 27) {
+
+      // 10 - 26
+
+      switch(mode) {
+      case QRMode.MODE_NUMBER    : return 12;
+      case QRMode.MODE_ALPHA_NUM : return 11;
+      case QRMode.MODE_8BIT_BYTE : return 16;
+      case QRMode.MODE_KANJI     : return 10;
+      default :
+        throw 'mode:' + mode;
+      }
+
+    } else if (type < 41) {
+
+      // 27 - 40
+
+      switch(mode) {
+      case QRMode.MODE_NUMBER    : return 14;
+      case QRMode.MODE_ALPHA_NUM : return 13;
+      case QRMode.MODE_8BIT_BYTE : return 16;
+      case QRMode.MODE_KANJI     : return 12;
+      default :
+        throw 'mode:' + mode;
+      }
+
+    } else {
+      throw 'type:' + type;
+    }
+  };
+
+  _this.getLostPoint = function(qrcode) {
+
+    const moduleCount = qrcode.getModuleCount();
+
+    let lostPoint = 0;
+
+    // LEVEL1
+
+    for (let row = 0; row < moduleCount; row += 1) {
+      for (let col = 0; col < moduleCount; col += 1) {
+
+        let sameCount = 0;
+        const dark = qrcode.isDark(row, col);
+
+        for (let r = -1; r <= 1; r += 1) {
+
+          if (row + r < 0 || moduleCount <= row + r) {
+            continue;
+          }
+
+          for (let c = -1; c <= 1; c += 1) {
+
+            if (col + c < 0 || moduleCount <= col + c) {
+              continue;
+            }
+
+            if (r == 0 && c == 0) {
+              continue;
+            }
+
+            if (dark == qrcode.isDark(row + r, col + c) ) {
+              sameCount += 1;
+            }
+          }
+        }
+
+        if (sameCount > 5) {
+          lostPoint += (3 + sameCount - 5);
+        }
+      }
+    };
+
+    // LEVEL2
+
+    for (let row = 0; row < moduleCount - 1; row += 1) {
+      for (let col = 0; col < moduleCount - 1; col += 1) {
+        let count = 0;
+        if (qrcode.isDark(row, col) ) count += 1;
+        if (qrcode.isDark(row + 1, col) ) count += 1;
+        if (qrcode.isDark(row, col + 1) ) count += 1;
+        if (qrcode.isDark(row + 1, col + 1) ) count += 1;
+        if (count == 0 || count == 4) {
+          lostPoint += 3;
+        }
+      }
+    }
+
+    // LEVEL3
+
+    for (let row = 0; row < moduleCount; row += 1) {
+      for (let col = 0; col < moduleCount - 6; col += 1) {
+        if (qrcode.isDark(row, col)
+            && !qrcode.isDark(row, col + 1)
+            &&  qrcode.isDark(row, col + 2)
+            &&  qrcode.isDark(row, col + 3)
+            &&  qrcode.isDark(row, col + 4)
+            && !qrcode.isDark(row, col + 5)
+            &&  qrcode.isDark(row, col + 6) ) {
+          lostPoint += 40;
+        }
+      }
+    }
+
+    for (let col = 0; col < moduleCount; col += 1) {
+      for (let row = 0; row < moduleCount - 6; row += 1) {
+        if (qrcode.isDark(row, col)
+            && !qrcode.isDark(row + 1, col)
+            &&  qrcode.isDark(row + 2, col)
+            &&  qrcode.isDark(row + 3, col)
+            &&  qrcode.isDark(row + 4, col)
+            && !qrcode.isDark(row + 5, col)
+            &&  qrcode.isDark(row + 6, col) ) {
+          lostPoint += 40;
+        }
+      }
+    }
+
+    // LEVEL4
+
+    let darkCount = 0;
+
+    for (let col = 0; col < moduleCount; col += 1) {
+      for (let row = 0; row < moduleCount; row += 1) {
+        if (qrcode.isDark(row, col) ) {
+          darkCount += 1;
+        }
+      }
+    }
+
+    const ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+    lostPoint += ratio * 10;
+
+    return lostPoint;
+  };
+
+  return _this;
+}();
+
+//---------------------------------------------------------------------
+// QRMath
+//---------------------------------------------------------------------
+
+const QRMath = function() {
+
+  const EXP_TABLE = new Array(256);
+  const LOG_TABLE = new Array(256);
+
+  // initialize tables
+  for (let i = 0; i < 8; i += 1) {
+    EXP_TABLE[i] = 1 << i;
+  }
+  for (let i = 8; i < 256; i += 1) {
+    EXP_TABLE[i] = EXP_TABLE[i - 4]
+      ^ EXP_TABLE[i - 5]
+      ^ EXP_TABLE[i - 6]
+      ^ EXP_TABLE[i - 8];
+  }
+  for (let i = 0; i < 255; i += 1) {
+    LOG_TABLE[EXP_TABLE[i] ] = i;
+  }
+
+  const _this = {};
+
+  _this.glog = function(n) {
+
+    if (n < 1) {
+      throw 'glog(' + n + ')';
+    }
+
+    return LOG_TABLE[n];
+  };
+
+  _this.gexp = function(n) {
+
+    while (n < 0) {
+      n += 255;
+    }
+
+    while (n >= 256) {
+      n -= 255;
+    }
+
+    return EXP_TABLE[n];
+  };
+
+  return _this;
+}();
+
+//---------------------------------------------------------------------
+// qrPolynomial
+//---------------------------------------------------------------------
+
+const qrPolynomial = function(num, shift) {
+
+  if (typeof num.length == 'undefined') {
+    throw num.length + '/' + shift;
+  }
+
+  const _num = function() {
+    let offset = 0;
+    while (offset < num.length && num[offset] == 0) {
+      offset += 1;
+    }
+    const _num = new Array(num.length - offset + shift);
+    for (let i = 0; i < num.length - offset; i += 1) {
+      _num[i] = num[i + offset];
+    }
+    return _num;
+  }();
+
+  const _this = {};
+
+  _this.getAt = function(index) {
+    return _num[index];
+  };
+
+  _this.getLength = function() {
+    return _num.length;
+  };
+
+  _this.multiply = function(e) {
+
+    const num = new Array(_this.getLength() + e.getLength() - 1);
+
+    for (let i = 0; i < _this.getLength(); i += 1) {
+      for (let j = 0; j < e.getLength(); j += 1) {
+        num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i) ) + QRMath.glog(e.getAt(j) ) );
+      }
+    }
+
+    return qrPolynomial(num, 0);
+  };
+
+  _this.mod = function(e) {
+
+    if (_this.getLength() - e.getLength() < 0) {
+      return _this;
+    }
+
+    const ratio = QRMath.glog(_this.getAt(0) ) - QRMath.glog(e.getAt(0) );
+
+    const num = new Array(_this.getLength() );
+    for (let i = 0; i < _this.getLength(); i += 1) {
+      num[i] = _this.getAt(i);
+    }
+
+    for (let i = 0; i < e.getLength(); i += 1) {
+      num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i) ) + ratio);
+    }
+
+    // recursive call
+    return qrPolynomial(num, 0).mod(e);
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// QRRSBlock
+//---------------------------------------------------------------------
+
+const QRRSBlock = function() {
+
+  const RS_BLOCK_TABLE = [
+
+    // L
+    // M
+    // Q
+    // H
+
+    // 1
+    [1, 26, 19],
+    [1, 26, 16],
+    [1, 26, 13],
+    [1, 26, 9],
+
+    // 2
+    [1, 44, 34],
+    [1, 44, 28],
+    [1, 44, 22],
+    [1, 44, 16],
+
+    // 3
+    [1, 70, 55],
+    [1, 70, 44],
+    [2, 35, 17],
+    [2, 35, 13],
+
+    // 4
+    [1, 100, 80],
+    [2, 50, 32],
+    [2, 50, 24],
+    [4, 25, 9],
+
+    // 5
+    [1, 134, 108],
+    [2, 67, 43],
+    [2, 33, 15, 2, 34, 16],
+    [2, 33, 11, 2, 34, 12],
+
+    // 6
+    [2, 86, 68],
+    [4, 43, 27],
+    [4, 43, 19],
+    [4, 43, 15],
+
+    // 7
+    [2, 98, 78],
+    [4, 49, 31],
+    [2, 32, 14, 4, 33, 15],
+    [4, 39, 13, 1, 40, 14],
+
+    // 8
+    [2, 121, 97],
+    [2, 60, 38, 2, 61, 39],
+    [4, 40, 18, 2, 41, 19],
+    [4, 40, 14, 2, 41, 15],
+
+    // 9
+    [2, 146, 116],
+    [3, 58, 36, 2, 59, 37],
+    [4, 36, 16, 4, 37, 17],
+    [4, 36, 12, 4, 37, 13],
+
+    // 10
+    [2, 86, 68, 2, 87, 69],
+    [4, 69, 43, 1, 70, 44],
+    [6, 43, 19, 2, 44, 20],
+    [6, 43, 15, 2, 44, 16],
+
+    // 11
+    [4, 101, 81],
+    [1, 80, 50, 4, 81, 51],
+    [4, 50, 22, 4, 51, 23],
+    [3, 36, 12, 8, 37, 13],
+
+    // 12
+    [2, 116, 92, 2, 117, 93],
+    [6, 58, 36, 2, 59, 37],
+    [4, 46, 20, 6, 47, 21],
+    [7, 42, 14, 4, 43, 15],
+
+    // 13
+    [4, 133, 107],
+    [8, 59, 37, 1, 60, 38],
+    [8, 44, 20, 4, 45, 21],
+    [12, 33, 11, 4, 34, 12],
+
+    // 14
+    [3, 145, 115, 1, 146, 116],
+    [4, 64, 40, 5, 65, 41],
+    [11, 36, 16, 5, 37, 17],
+    [11, 36, 12, 5, 37, 13],
+
+    // 15
+    [5, 109, 87, 1, 110, 88],
+    [5, 65, 41, 5, 66, 42],
+    [5, 54, 24, 7, 55, 25],
+    [11, 36, 12, 7, 37, 13],
+
+    // 16
+    [5, 122, 98, 1, 123, 99],
+    [7, 73, 45, 3, 74, 46],
+    [15, 43, 19, 2, 44, 20],
+    [3, 45, 15, 13, 46, 16],
+
+    // 17
+    [1, 135, 107, 5, 136, 108],
+    [10, 74, 46, 1, 75, 47],
+    [1, 50, 22, 15, 51, 23],
+    [2, 42, 14, 17, 43, 15],
+
+    // 18
+    [5, 150, 120, 1, 151, 121],
+    [9, 69, 43, 4, 70, 44],
+    [17, 50, 22, 1, 51, 23],
+    [2, 42, 14, 19, 43, 15],
+
+    // 19
+    [3, 141, 113, 4, 142, 114],
+    [3, 70, 44, 11, 71, 45],
+    [17, 47, 21, 4, 48, 22],
+    [9, 39, 13, 16, 40, 14],
+
+    // 20
+    [3, 135, 107, 5, 136, 108],
+    [3, 67, 41, 13, 68, 42],
+    [15, 54, 24, 5, 55, 25],
+    [15, 43, 15, 10, 44, 16],
+
+    // 21
+    [4, 144, 116, 4, 145, 117],
+    [17, 68, 42],
+    [17, 50, 22, 6, 51, 23],
+    [19, 46, 16, 6, 47, 17],
+
+    // 22
+    [2, 139, 111, 7, 140, 112],
+    [17, 74, 46],
+    [7, 54, 24, 16, 55, 25],
+    [34, 37, 13],
+
+    // 23
+    [4, 151, 121, 5, 152, 122],
+    [4, 75, 47, 14, 76, 48],
+    [11, 54, 24, 14, 55, 25],
+    [16, 45, 15, 14, 46, 16],
+
+    // 24
+    [6, 147, 117, 4, 148, 118],
+    [6, 73, 45, 14, 74, 46],
+    [11, 54, 24, 16, 55, 25],
+    [30, 46, 16, 2, 47, 17],
+
+    // 25
+    [8, 132, 106, 4, 133, 107],
+    [8, 75, 47, 13, 76, 48],
+    [7, 54, 24, 22, 55, 25],
+    [22, 45, 15, 13, 46, 16],
+
+    // 26
+    [10, 142, 114, 2, 143, 115],
+    [19, 74, 46, 4, 75, 47],
+    [28, 50, 22, 6, 51, 23],
+    [33, 46, 16, 4, 47, 17],
+
+    // 27
+    [8, 152, 122, 4, 153, 123],
+    [22, 73, 45, 3, 74, 46],
+    [8, 53, 23, 26, 54, 24],
+    [12, 45, 15, 28, 46, 16],
+
+    // 28
+    [3, 147, 117, 10, 148, 118],
+    [3, 73, 45, 23, 74, 46],
+    [4, 54, 24, 31, 55, 25],
+    [11, 45, 15, 31, 46, 16],
+
+    // 29
+    [7, 146, 116, 7, 147, 117],
+    [21, 73, 45, 7, 74, 46],
+    [1, 53, 23, 37, 54, 24],
+    [19, 45, 15, 26, 46, 16],
+
+    // 30
+    [5, 145, 115, 10, 146, 116],
+    [19, 75, 47, 10, 76, 48],
+    [15, 54, 24, 25, 55, 25],
+    [23, 45, 15, 25, 46, 16],
+
+    // 31
+    [13, 145, 115, 3, 146, 116],
+    [2, 74, 46, 29, 75, 47],
+    [42, 54, 24, 1, 55, 25],
+    [23, 45, 15, 28, 46, 16],
+
+    // 32
+    [17, 145, 115],
+    [10, 74, 46, 23, 75, 47],
+    [10, 54, 24, 35, 55, 25],
+    [19, 45, 15, 35, 46, 16],
+
+    // 33
+    [17, 145, 115, 1, 146, 116],
+    [14, 74, 46, 21, 75, 47],
+    [29, 54, 24, 19, 55, 25],
+    [11, 45, 15, 46, 46, 16],
+
+    // 34
+    [13, 145, 115, 6, 146, 116],
+    [14, 74, 46, 23, 75, 47],
+    [44, 54, 24, 7, 55, 25],
+    [59, 46, 16, 1, 47, 17],
+
+    // 35
+    [12, 151, 121, 7, 152, 122],
+    [12, 75, 47, 26, 76, 48],
+    [39, 54, 24, 14, 55, 25],
+    [22, 45, 15, 41, 46, 16],
+
+    // 36
+    [6, 151, 121, 14, 152, 122],
+    [6, 75, 47, 34, 76, 48],
+    [46, 54, 24, 10, 55, 25],
+    [2, 45, 15, 64, 46, 16],
+
+    // 37
+    [17, 152, 122, 4, 153, 123],
+    [29, 74, 46, 14, 75, 47],
+    [49, 54, 24, 10, 55, 25],
+    [24, 45, 15, 46, 46, 16],
+
+    // 38
+    [4, 152, 122, 18, 153, 123],
+    [13, 74, 46, 32, 75, 47],
+    [48, 54, 24, 14, 55, 25],
+    [42, 45, 15, 32, 46, 16],
+
+    // 39
+    [20, 147, 117, 4, 148, 118],
+    [40, 75, 47, 7, 76, 48],
+    [43, 54, 24, 22, 55, 25],
+    [10, 45, 15, 67, 46, 16],
+
+    // 40
+    [19, 148, 118, 6, 149, 119],
+    [18, 75, 47, 31, 76, 48],
+    [34, 54, 24, 34, 55, 25],
+    [20, 45, 15, 61, 46, 16]
+  ];
+
+  const qrRSBlock = function(totalCount, dataCount) {
+    const _this = {};
+    _this.totalCount = totalCount;
+    _this.dataCount = dataCount;
+    return _this;
+  };
+
+  const _this = {};
+
+  const getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+
+    switch(errorCorrectionLevel) {
+    case QRErrorCorrectionLevel.L :
+      return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+    case QRErrorCorrectionLevel.M :
+      return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+    case QRErrorCorrectionLevel.Q :
+      return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+    case QRErrorCorrectionLevel.H :
+      return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+    default :
+      return undefined;
+    }
+  };
+
+  _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+
+    const rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+
+    if (typeof rsBlock == 'undefined') {
+      throw 'bad rs block @ typeNumber:' + typeNumber +
+          '/errorCorrectionLevel:' + errorCorrectionLevel;
+    }
+
+    const length = rsBlock.length / 3;
+
+    const list = [];
+
+    for (let i = 0; i < length; i += 1) {
+
+      const count = rsBlock[i * 3 + 0];
+      const totalCount = rsBlock[i * 3 + 1];
+      const dataCount = rsBlock[i * 3 + 2];
+
+      for (let j = 0; j < count; j += 1) {
+        list.push(qrRSBlock(totalCount, dataCount) );
+      }
+    }
+
+    return list;
+  };
+
+  return _this;
+}();
+
+//---------------------------------------------------------------------
+// qrBitBuffer
+//---------------------------------------------------------------------
+
+const qrBitBuffer = function() {
+
+  const _buffer = [];
+  let _length = 0;
+
+  const _this = {};
+
+  _this.getBuffer = function() {
+    return _buffer;
+  };
+
+  _this.getAt = function(index) {
+    const bufIndex = Math.floor(index / 8);
+    return ( (_buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+  };
+
+  _this.put = function(num, length) {
+    for (let i = 0; i < length; i += 1) {
+      _this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+    }
+  };
+
+  _this.getLengthInBits = function() {
+    return _length;
+  };
+
+  _this.putBit = function(bit) {
+
+    const bufIndex = Math.floor(_length / 8);
+    if (_buffer.length <= bufIndex) {
+      _buffer.push(0);
+    }
+
+    if (bit) {
+      _buffer[bufIndex] |= (0x80 >>> (_length % 8) );
+    }
+
+    _length += 1;
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qrNumber
+//---------------------------------------------------------------------
+
+const qrNumber = function(data) {
+
+  const _mode = QRMode.MODE_NUMBER;
+  const _data = data;
+
+  const _this = {};
+
+  _this.getMode = function() {
+    return _mode;
+  };
+
+  _this.getLength = function(buffer) {
+    return _data.length;
+  };
+
+  _this.write = function(buffer) {
+
+    const data = _data;
+
+    let i = 0;
+
+    while (i + 2 < data.length) {
+      buffer.put(strToNum(data.substring(i, i + 3) ), 10);
+      i += 3;
+    }
+
+    if (i < data.length) {
+      if (data.length - i == 1) {
+        buffer.put(strToNum(data.substring(i, i + 1) ), 4);
+      } else if (data.length - i == 2) {
+        buffer.put(strToNum(data.substring(i, i + 2) ), 7);
+      }
+    }
+  };
+
+  const strToNum = function(s) {
+    let num = 0;
+    for (let i = 0; i < s.length; i += 1) {
+      num = num * 10 + chatToNum(s.charAt(i) );
+    }
+    return num;
+  };
+
+  const chatToNum = function(c) {
+    if ('0' <= c && c <= '9') {
+      return c.charCodeAt(0) - '0'.charCodeAt(0);
+    }
+    throw 'illegal char :' + c;
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qrAlphaNum
+//---------------------------------------------------------------------
+
+const qrAlphaNum = function(data) {
+
+  const _mode = QRMode.MODE_ALPHA_NUM;
+  const _data = data;
+
+  const _this = {};
+
+  _this.getMode = function() {
+    return _mode;
+  };
+
+  _this.getLength = function(buffer) {
+    return _data.length;
+  };
+
+  _this.write = function(buffer) {
+
+    const s = _data;
+
+    let i = 0;
+
+    while (i + 1 < s.length) {
+      buffer.put(
+        getCode(s.charAt(i) ) * 45 +
+        getCode(s.charAt(i + 1) ), 11);
+      i += 2;
+    }
+
+    if (i < s.length) {
+      buffer.put(getCode(s.charAt(i) ), 6);
+    }
+  };
+
+  const getCode = function(c) {
+
+    if ('0' <= c && c <= '9') {
+      return c.charCodeAt(0) - '0'.charCodeAt(0);
+    } else if ('A' <= c && c <= 'Z') {
+      return c.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+    } else {
+      switch (c) {
+      case '\u0020' : return 36;
+      case '$' : return 37;
+      case '%' : return 38;
+      case '*' : return 39;
+      case '+' : return 40;
+      case '-' : return 41;
+      case '.' : return 42;
+      case '/' : return 43;
+      case ':' : return 44;
+      default :
+        throw 'illegal char :' + c;
+      }
+    }
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qr8BitByte
+//---------------------------------------------------------------------
+
+const qr8BitByte = function(data) {
+
+  const _mode = QRMode.MODE_8BIT_BYTE;
+  const _data = data;
+  const _bytes = qrcode.stringToBytes(data);
+
+  const _this = {};
+
+  _this.getMode = function() {
+    return _mode;
+  };
+
+  _this.getLength = function(buffer) {
+    return _bytes.length;
+  };
+
+  _this.write = function(buffer) {
+    for (let i = 0; i < _bytes.length; i += 1) {
+      buffer.put(_bytes[i], 8);
+    }
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qrKanji
+//---------------------------------------------------------------------
+
+const qrKanji = function(data) {
+
+  const _mode = QRMode.MODE_KANJI;
+  const _data = data;
+
+  const stringToBytes = qrcode.stringToBytes;
+  !function(c, code) {
+    // self test for sjis support.
+    const test = stringToBytes(c);
+    if (test.length != 2 || ( (test[0] << 8) | test[1]) != code) {
+      throw 'sjis not supported.';
+    }
+  }('\u53cb', 0x9746);
+
+  const _bytes = stringToBytes(data);
+
+  const _this = {};
+
+  _this.getMode = function() {
+    return _mode;
+  };
+
+  _this.getLength = function(buffer) {
+    return ~~(_bytes.length / 2);
+  };
+
+  _this.write = function(buffer) {
+
+    const data = _bytes;
+
+    let i = 0;
+
+    while (i + 1 < data.length) {
+
+      let c = ( (0xff & data[i]) << 8) | (0xff & data[i + 1]);
+
+      if (0x8140 <= c && c <= 0x9FFC) {
+        c -= 0x8140;
+      } else if (0xE040 <= c && c <= 0xEBBF) {
+        c -= 0xC140;
+      } else {
+        throw 'illegal char at ' + (i + 1) + '/' + c;
+      }
+
+      c = ( (c >>> 8) & 0xff) * 0xC0 + (c & 0xff);
+
+      buffer.put(c, 13);
+
+      i += 2;
+    }
+
+    if (i < data.length) {
+      throw 'illegal char at ' + (i + 1);
+    }
+  };
+
+  return _this;
+};
+
+//=====================================================================
+// GIF Support etc.
+//
+
+//---------------------------------------------------------------------
+// byteArrayOutputStream
+//---------------------------------------------------------------------
+
+const byteArrayOutputStream = function() {
+
+  const _bytes = [];
+
+  const _this = {};
+
+  _this.writeByte = function(b) {
+    _bytes.push(b & 0xff);
+  };
+
+  _this.writeShort = function(i) {
+    _this.writeByte(i);
+    _this.writeByte(i >>> 8);
+  };
+
+  _this.writeBytes = function(b, off, len) {
+    off = off || 0;
+    len = len || b.length;
+    for (let i = 0; i < len; i += 1) {
+      _this.writeByte(b[i + off]);
+    }
+  };
+
+  _this.writeString = function(s) {
+    for (let i = 0; i < s.length; i += 1) {
+      _this.writeByte(s.charCodeAt(i) );
+    }
+  };
+
+  _this.toByteArray = function() {
+    return _bytes;
+  };
+
+  _this.toString = function() {
+    let s = '';
+    s += '[';
+    for (let i = 0; i < _bytes.length; i += 1) {
+      if (i > 0) {
+        s += ',';
+      }
+      s += _bytes[i];
+    }
+    s += ']';
+    return s;
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// base64EncodeOutputStream
+//---------------------------------------------------------------------
+
+const base64EncodeOutputStream = function() {
+
+  let _buffer = 0;
+  let _buflen = 0;
+  let _length = 0;
+  let _base64 = '';
+
+  const _this = {};
+
+  const writeEncoded = function(b) {
+    _base64 += String.fromCharCode(encode(b & 0x3f) );
+  };
+
+  const encode = function(n) {
+    if (n < 0) {
+      throw 'n:' + n;
+    } else if (n < 26) {
+      return 0x41 + n;
+    } else if (n < 52) {
+      return 0x61 + (n - 26);
+    } else if (n < 62) {
+      return 0x30 + (n - 52);
+    } else if (n == 62) {
+      return 0x2b;
+    } else if (n == 63) {
+      return 0x2f;
+    } else {
+      throw 'n:' + n;
+    }
+  };
+
+  _this.writeByte = function(n) {
+
+    _buffer = (_buffer << 8) | (n & 0xff);
+    _buflen += 8;
+    _length += 1;
+
+    while (_buflen >= 6) {
+      writeEncoded(_buffer >>> (_buflen - 6) );
+      _buflen -= 6;
+    }
+  };
+
+  _this.flush = function() {
+
+    if (_buflen > 0) {
+      writeEncoded(_buffer << (6 - _buflen) );
+      _buffer = 0;
+      _buflen = 0;
+    }
+
+    if (_length % 3 != 0) {
+      // padding
+      const padlen = 3 - _length % 3;
+      for (let i = 0; i < padlen; i += 1) {
+        _base64 += '=';
+      }
+    }
+  };
+
+  _this.toString = function() {
+    return _base64;
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// base64DecodeInputStream
+//---------------------------------------------------------------------
+
+const base64DecodeInputStream = function(str) {
+
+  const _str = str;
+  let _pos = 0;
+  let _buffer = 0;
+  let _buflen = 0;
+
+  const _this = {};
+
+  _this.read = function() {
+
+    while (_buflen < 8) {
+
+      if (_pos >= _str.length) {
+        if (_buflen == 0) {
+          return -1;
+        }
+        throw 'unexpected end of file./' + _buflen;
+      }
+
+      const c = _str.charAt(_pos);
+      _pos += 1;
+
+      if (c == '=') {
+        _buflen = 0;
+        return -1;
+      } else if (c.match(/^\s$/) ) {
+        // ignore if whitespace.
+        continue;
+      }
+
+      _buffer = (_buffer << 6) | decode(c.charCodeAt(0) );
+      _buflen += 6;
+    }
+
+    const n = (_buffer >>> (_buflen - 8) ) & 0xff;
+    _buflen -= 8;
+    return n;
+  };
+
+  const decode = function(c) {
+    if (0x41 <= c && c <= 0x5a) {
+      return c - 0x41;
+    } else if (0x61 <= c && c <= 0x7a) {
+      return c - 0x61 + 26;
+    } else if (0x30 <= c && c <= 0x39) {
+      return c - 0x30 + 52;
+    } else if (c == 0x2b) {
+      return 62;
+    } else if (c == 0x2f) {
+      return 63;
+    } else {
+      throw 'c:' + c;
+    }
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// gifImage (B/W)
+//---------------------------------------------------------------------
+
+const gifImage = function(width, height) {
+
+  const _width = width;
+  const _height = height;
+  const _data = new Array(width * height);
+
+  const _this = {};
+
+  _this.setPixel = function(x, y, pixel) {
+    _data[y * _width + x] = pixel;
+  };
+
+  _this.write = function(out) {
+
+    //---------------------------------
+    // GIF Signature
+
+    out.writeString('GIF87a');
+
+    //---------------------------------
+    // Screen Descriptor
+
+    out.writeShort(_width);
+    out.writeShort(_height);
+
+    out.writeByte(0x80); // 2bit
+    out.writeByte(0);
+    out.writeByte(0);
+
+    //---------------------------------
+    // Global Color Map
+
+    // black
+    out.writeByte(0x00);
+    out.writeByte(0x00);
+    out.writeByte(0x00);
+
+    // white
+    out.writeByte(0xff);
+    out.writeByte(0xff);
+    out.writeByte(0xff);
+
+    //---------------------------------
+    // Image Descriptor
+
+    out.writeString(',');
+    out.writeShort(0);
+    out.writeShort(0);
+    out.writeShort(_width);
+    out.writeShort(_height);
+    out.writeByte(0);
+
+    //---------------------------------
+    // Local Color Map
+
+    //---------------------------------
+    // Raster Data
+
+    const lzwMinCodeSize = 2;
+    const raster = getLZWRaster(lzwMinCodeSize);
+
+    out.writeByte(lzwMinCodeSize);
+
+    let offset = 0;
+
+    while (raster.length - offset > 255) {
+      out.writeByte(255);
+      out.writeBytes(raster, offset, 255);
+      offset += 255;
+    }
+
+    out.writeByte(raster.length - offset);
+    out.writeBytes(raster, offset, raster.length - offset);
+    out.writeByte(0x00);
+
+    //---------------------------------
+    // GIF Terminator
+    out.writeString(';');
+  };
+
+  const bitOutputStream = function(out) {
+
+    const _out = out;
+    let _bitLength = 0;
+    let _bitBuffer = 0;
+
+    const _this = {};
+
+    _this.write = function(data, length) {
+
+      if ( (data >>> length) != 0) {
+        throw 'length over';
+      }
+
+      while (_bitLength + length >= 8) {
+        _out.writeByte(0xff & ( (data << _bitLength) | _bitBuffer) );
+        length -= (8 - _bitLength);
+        data >>>= (8 - _bitLength);
+        _bitBuffer = 0;
+        _bitLength = 0;
+      }
+
+      _bitBuffer = (data << _bitLength) | _bitBuffer;
+      _bitLength = _bitLength + length;
+    };
+
+    _this.flush = function() {
+      if (_bitLength > 0) {
+        _out.writeByte(_bitBuffer);
+      }
+    };
+
+    return _this;
+  };
+
+  const getLZWRaster = function(lzwMinCodeSize) {
+
+    const clearCode = 1 << lzwMinCodeSize;
+    const endCode = (1 << lzwMinCodeSize) + 1;
+    let bitLength = lzwMinCodeSize + 1;
+
+    // Setup LZWTable
+    const table = lzwTable();
+
+    for (let i = 0; i < clearCode; i += 1) {
+      table.add(String.fromCharCode(i) );
+    }
+    table.add(String.fromCharCode(clearCode) );
+    table.add(String.fromCharCode(endCode) );
+
+    const byteOut = byteArrayOutputStream();
+    const bitOut = bitOutputStream(byteOut);
+
+    // clear code
+    bitOut.write(clearCode, bitLength);
+
+    let dataIndex = 0;
+
+    let s = String.fromCharCode(_data[dataIndex]);
+    dataIndex += 1;
+
+    while (dataIndex < _data.length) {
+
+      const c = String.fromCharCode(_data[dataIndex]);
+      dataIndex += 1;
+
+      if (table.contains(s + c) ) {
+
+        s = s + c;
+
+      } else {
+
+        bitOut.write(table.indexOf(s), bitLength);
+
+        if (table.size() < 0xfff) {
+
+          if (table.size() == (1 << bitLength) ) {
+            bitLength += 1;
+          }
+
+          table.add(s + c);
+        }
+
+        s = c;
+      }
+    }
+
+    bitOut.write(table.indexOf(s), bitLength);
+
+    // end code
+    bitOut.write(endCode, bitLength);
+
+    bitOut.flush();
+
+    return byteOut.toByteArray();
+  };
+
+  const lzwTable = function() {
+
+    const _map = {};
+    let _size = 0;
+
+    const _this = {};
+
+    _this.add = function(key) {
+      if (_this.contains(key) ) {
+        throw 'dup key:' + key;
+      }
+      _map[key] = _size;
+      _size += 1;
+    };
+
+    _this.size = function() {
+      return _size;
+    };
+
+    _this.indexOf = function(key) {
+      return _map[key];
+    };
+
+    _this.contains = function(key) {
+      return typeof _map[key] != 'undefined';
+    };
+
+    return _this;
+  };
+
+  return _this;
+};
+
+const createDataURL = function(width, height, getPixel) {
+  const gif = gifImage(width, height);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      gif.setPixel(x, y, getPixel(x, y) );
+    }
+  }
+
+  const b = byteArrayOutputStream();
+  gif.write(b);
+
+  const base64 = base64EncodeOutputStream();
+  const bytes = b.toByteArray();
+  for (let i = 0; i < bytes.length; i += 1) {
+    base64.writeByte(bytes[i]);
+  }
+  base64.flush();
+
+  return 'data:image/gif;base64,' + base64;
+};
+
+
+
+</script>
+<script>
 'use strict';
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -552,9 +2885,11 @@ const ICE = [
 // One certificate per page for all connections, so the media call can be
 // checked against the fingerprint the password handshake was bound to.
 let certPromise;
+let myCert = null;
 async function rtcConfig() {
   certPromise ??= RTCPeerConnection.generateCertificate({ name: 'ECDSA', namedCurve: 'P-256' });
-  return { iceServers: ICE, certificates: [await certPromise] };
+  myCert = await certPromise;
+  return { iceServers: ICE, certificates: [myCert] };
 }
 async function newPeer(id) {
   await loadPeerJS();
@@ -631,6 +2966,8 @@ async function startSharing() {
   host.chat = [];
   $('hostChat').replaceChildren();
   renderScreens();
+  showPreview();
+  renderMeControls();
   host.code = store.get('code') || newCode();
   host.password = generatePassword();
   $('myPw').textContent = formatPassword(host.password);
@@ -692,6 +3029,7 @@ async function switchScreen(i, force = false) {
   }));
   renderScreens();
   broadcast(screensMsg());
+  showPreview();
 }
 
 function screensMsg() { return { type: 'screens', list: host.screens.map((s) => s.label), active: host.active }; }
@@ -772,6 +3110,8 @@ async function createHostPeer() {
   peer.on('open', () => {
     store.set('code', host.code);
     renderViewers();
+    renderInvite();
+    broadcastRoster();
   });
   peer.on('error', (e) => {
     if (e.type === 'unavailable-id') {
@@ -790,7 +3130,11 @@ async function createHostPeer() {
     }
   });
   peer.on('connection', (conn) => onViewer(conn));
-  peer.on('call', (call) => call.close()); // hosts only send media
+  peer.on('call', (call) => {
+    // Viewers may send their mic/camera; the screen itself only goes out.
+    if (call.metadata?.kind === 'cam' && host.viewers.get(call.peer)?.authed) return onCamCall(call);
+    call.close();
+  });
 }
 
 function renderViewers() {
@@ -805,19 +3149,23 @@ function renderViewers() {
     const b = document.createElement('button');
     b.className = 'chip';
     b.textContent = 'Disconnect';
-    b.onclick = () => closeViewer(v);
+    b.onclick = () => closeViewer(v, 'kicked');
     li.append(name, b);
     return li;
   }));
 }
 
-function closeViewer(v) {
-  if (v.authed && host.viewers.get(v.conn.peer) === v) postChat({ system: true, text: `${v.name} left` });
+function closeViewer(v, reason) {
+  const wasHere = v.authed && host.viewers.get(v.conn.peer) === v;
+  if (reason && v.conn.open) { try { v.conn.send({ type: reason }); } catch {} }
+  if (wasHere) postChat({ system: true, text: `${v.name} left` });
   v.authed = false;
   v.call?.close();
-  v.conn.close();
+  // Give the goodbye message a moment to arrive.
+  setTimeout(() => v.conn.close(), reason ? 150 : 0);
   host.viewers.delete(v.conn.peer);
   renderViewers();
+  if (wasHere) broadcastRoster();
 }
 
 // Five wrong passwords lock the code for an increasing time.
@@ -856,13 +3204,15 @@ function onViewer(conn) {
   conn.on('data', (d) => { queue = queue.then(() => onViewerData(v, d)).catch(() => closeViewer(v)); });
   conn.on('close', () => {
     if (v.state === 'confirm') recordFailure(); // guessed, then left
-    if (v.authed && host.viewers.get(conn.peer) === v) {
+    const wasHere = v.authed && host.viewers.get(conn.peer) === v;
+    if (wasHere) {
       v.authed = false;
       postChat({ system: true, text: `${v.name} left` });
     }
     v.call?.close();
     host.viewers.delete(conn.peer);
     renderViewers();
+    if (wasHere) broadcastRoster();
   });
 }
 
@@ -890,12 +3240,15 @@ async function onViewerData(v, d) {
       return;
     }
     v.name = uniqueName(cleanText(d.name, 30) || 'Viewer');
+    v.fp = fingerprint(v.conn.peerConnection.remoteDescription);
+    v.quality = ['auto', 'saver', 'sharp'].includes(d.quality) ? d.quality : 'auto';
     v.state = 'authed';
     v.authed = true;
     renderViewers();
     v.conn.send({ type: 'chatHistory', list: host.chat });
     v.conn.send(screensMsg());
     postChat({ system: true, text: `${v.name} joined` });
+    broadcastRoster();
     // Media goes over its own connection, which must use the same viewer
     // certificate the password check was bound to.
     const viewerFp = fingerprint(v.conn.peerConnection.remoteDescription);
@@ -906,33 +3259,50 @@ async function onViewerData(v, d) {
       pc.addEventListener('signalingstatechange', () => {
         if (pc.signalingState === 'stable' && pc.remoteDescription && fingerprint(pc.remoteDescription) !== viewerFp) closeViewer(v);
       });
-      setTimeout(() => tuneSenders(pc), 0);
+      setTimeout(() => tuneSenders(pc, v.quality), 0);
     }
     call.on('close', () => { if (host.viewers.get(v.conn.peer) === v) closeViewer(v); });
   } else if (v.authed && d.type === 'chat') {
     onViewerChat(v, d.text);
   } else if (v.authed && d.type === 'screen' && Number.isInteger(d.index)) {
     switchScreen(d.index, true);
+  } else if (v.authed && ['state', 'react', 'ping', 'quality'].includes(d.type)) {
+    onMeetFromHost(v, d);
   }
 }
 
-async function tuneSenders(pc) {
+// Per-viewer quality: 'auto' (smooth, up to 10 Mbps), 'saver' (half
+// resolution, 20 fps, ~0.8 Mbps for phones on mobile data) or 'sharp'
+// (keeps full resolution for reading small text).
+const QUALITY = {
+  auto: { maxBitrate: 10_000_000, maxFramerate: 60, scaleResolutionDownBy: 1, degradation: 'balanced' },
+  saver: { maxBitrate: 800_000, maxFramerate: 20, scaleResolutionDownBy: 2, degradation: 'balanced' },
+  sharp: { maxBitrate: 15_000_000, maxFramerate: 30, scaleResolutionDownBy: 1, degradation: 'maintain-resolution' },
+};
+async function tuneSenders(pc, level = 'auto') {
+  const q = QUALITY[level] || QUALITY.auto;
   for (const s of pc.getSenders()) {
     if (s.track?.kind !== 'video') continue;
     try {
       const p = s.getParameters();
       if (!p.encodings?.length) p.encodings = [{}];
-      for (const e of p.encodings) { e.maxBitrate = 10_000_000; e.maxFramerate = 60; e.priority = 'high'; e.networkPriority = 'high'; }
-      p.degradationPreference = 'balanced';
+      for (const e of p.encodings) {
+        e.maxBitrate = q.maxBitrate; e.maxFramerate = q.maxFramerate; e.scaleResolutionDownBy = q.scaleResolutionDownBy;
+        e.priority = 'high'; e.networkPriority = 'high';
+      }
+      p.degradationPreference = q.degradation;
       await s.setParameters(p);
     } catch {}
   }
 }
 
 function stopSharing() {
-  for (const v of [...host.viewers.values()]) closeViewer(v);
-  host.peer?.destroy();
+  for (const v of [...host.viewers.values()]) closeViewer(v, 'ended');
+  const peer = host.peer;
   host.peer = null;
+  setTimeout(() => peer?.destroy(), 200);
+  stopMedia();
+  $('hostPreview').srcObject = null;
   for (const s of host.screens) s.stream.getTracks().forEach((t) => t.stop());
   host.screens = [];
   $('shareIdle').hidden = false;
@@ -944,15 +3314,407 @@ $('stopBtn').onclick = stopSharing;
 $('newPwBtn').onclick = () => {
   host.password = generatePassword();
   $('myPw').textContent = formatPassword(host.password);
+  renderInvite();
   toast('New password set. Devices already watching stay connected.');
 };
+function showPreview() {
+  const v = $('hostPreview');
+  if (v.srcObject !== activeStream()) v.srcObject = activeStream() || null;
+  v.play?.().catch(() => {});
+}
+
+// Invite link + QR code (only when this page has a web address others can open).
+function inviteLink() {
+  if (!/^https?:$/.test(location.protocol) || !host.code) return '';
+  const base = location.href.split('#')[0];
+  return `${base}#c=${host.code}${$('linkPw').checked ? `&p=${encodeURIComponent(host.password)}` : ''}`;
+}
+function renderInvite() {
+  const link = inviteLink();
+  $('invite').hidden = !link;
+  if (!link) return;
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(link);
+    qr.make();
+    $('inviteQr').innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+  } catch {}
+}
+$('linkPw').onchange = renderInvite;
+$('copyLinkBtn').onclick = async () => {
+  const link = inviteLink();
+  try { await navigator.clipboard.writeText(link); toast('Invite link copied'); } catch { prompt('Invite link:', link); }
+};
+
 $('copyBtn').onclick = async () => {
   try { await navigator.clipboard.writeText(formatCode(host.code)); toast('Copied'); } catch { toast(formatCode(host.code)); }
 };
 
+// ---------- meeting: cameras, mics, people, reactions, pointer ----------
+//
+// Everyone in a session (host and viewers) can turn on a mic and camera.
+// The host keeps the roster (who is here, with each person's verified
+// certificate fingerprint) and sends it to everyone. Each person who has
+// a mic or camera on calls every other roster member with it; a call is
+// accepted only from a roster member, over that member's verified
+// certificate, so the PeerJS service can't slip anyone in.
+
+const REACTIONS = ['👍', '❤️', '😂', '🎉', '👏', '😮', '🔥', '🙌'];
+const meet = { media: null, mic: false, cam: false, hand: false, roster: [], out: new Map(), inc: new Map(), levels: new Map(), audioCtx: null, people: true };
+
+function myFingerprint() {
+  const fps = myCert?.getFingerprints?.() || [];
+  const f = fps.find((x) => x.algorithm === 'sha-256') || fps[0];
+  return f ? `${f.algorithm} ${f.value}`.toLowerCase() : '';
+}
+function meetPeer() { return host.peer || view.peer; }
+function myId() { return meetPeer()?.id; }
+function colorFor(name) {
+  let h = 0;
+  for (const ch of String(name)) h = (h * 31 + ch.codePointAt(0)) % 360;
+  return `hsl(${h} 75% 62%)`;
+}
+function meName() { return host.peer ? `${deviceName()} (sharing)` : (cleanText($('nameIn').value, 30) || deviceName()); }
+
+// Send a meeting message: viewers send to the host, the host handles it itself.
+function meetSend(msg) {
+  if (host.peer) return onMeetFromHost(null, msg);
+  if (view.conn?.open && view.authed) view.conn.send(msg);
+}
+
+// ----- roster (host side) -----
+function hostRoster() {
+  const list = [{ id: host.peer?.id, name: `${deviceName()} (sharing)`, fp: myFingerprint(), host: true, mic: meet.mic, cam: meet.cam, hand: meet.hand }];
+  for (const v of host.viewers.values()) {
+    if (v.authed) list.push({ id: v.conn.peer, name: v.name, fp: v.fp, mic: !!v.mic, cam: !!v.cam, hand: !!v.hand });
+  }
+  return list;
+}
+function broadcastRoster() {
+  if (!host.peer) return;
+  const list = hostRoster();
+  broadcast({ type: 'roster', list });
+  applyRoster(list);
+}
+
+// Messages from a viewer (v) or from the host itself (v = null).
+function onMeetFromHost(v, d) {
+  const who = v ? v.name : `${deviceName()} (sharing)`;
+  if (d.type === 'state') {
+    if (v) {
+      const raised = !v.hand && d.hand;
+      v.mic = !!d.mic; v.cam = !!d.cam; v.hand = !!d.hand;
+      if (raised) { postChat({ system: true, text: `✋ ${v.name} raised a hand` }); toast(`✋ ${v.name} raised a hand`); }
+    }
+    broadcastRoster();
+  } else if (d.type === 'react' && REACTIONS.includes(d.emoji)) {
+    if (v) {
+      const now = Date.now();
+      v.reactTimes = (v.reactTimes || []).filter((t) => now - t < 3000);
+      if (v.reactTimes.length >= 6) return;
+      v.reactTimes.push(now);
+    }
+    const m = { type: 'react', from: who, emoji: d.emoji };
+    broadcast(m);
+    showReaction(m);
+  } else if (d.type === 'ping' && Number.isFinite(d.x) && Number.isFinite(d.y)) {
+    const m = { type: 'ping', from: who, x: Math.min(1, Math.max(0, d.x)), y: Math.min(1, Math.max(0, d.y)) };
+    broadcast(m);
+    showPing(m);
+  } else if (v && d.type === 'quality' && ['auto', 'saver', 'sharp'].includes(d.level)) {
+    v.quality = d.level;
+    const pc = v.call?.peerConnection;
+    if (pc) tuneSenders(pc, d.level);
+  }
+}
+
+// ----- roster (everyone) -----
+function applyRoster(list) {
+  meet.roster = (Array.isArray(list) ? list : []).slice(0, 20).map((m) => ({
+    id: String(m.id || ''), name: cleanText(m.name, 60) || 'Someone', fp: String(m.fp || '').toLowerCase(),
+    host: !!m.host, mic: !!m.mic, cam: !!m.cam, hand: !!m.hand,
+  }));
+  const ids = new Set(meet.roster.map((m) => m.id));
+  for (const [id, c] of meet.out) if (!ids.has(id)) { c.close(); meet.out.delete(id); }
+  for (const [id, c] of meet.inc) if (!ids.has(id)) { c.call.close(); meet.inc.delete(id); }
+  syncCalls();
+  renderPeople();
+}
+
+// Call every roster member with our mic/camera (if any is on).
+function syncCalls() {
+  const peer = meetPeer();
+  if (!peer || !meet.media || !meet.media.getTracks().length) return;
+  for (const m of meet.roster) {
+    if (!m.id || m.id === peer.id || meet.out.has(m.id)) continue;
+    const call = peer.call(m.id, meet.media, { metadata: { kind: 'cam' } });
+    if (!call) continue;
+    meet.out.set(m.id, call);
+    const pc = call.peerConnection;
+    pc?.addEventListener('signalingstatechange', () => {
+      if (pc.signalingState === 'stable' && pc.remoteDescription && fingerprint(pc.remoteDescription) !== m.fp) call.close();
+    });
+    call.on('close', () => { if (meet.out.get(m.id) === call) meet.out.delete(m.id); });
+    call.on('error', () => {});
+  }
+}
+function recall() {
+  for (const c of meet.out.values()) c.close();
+  meet.out.clear();
+  syncCalls();
+}
+
+// Someone's mic/camera arriving.
+function onCamCall(call) {
+  const m = meet.roster.find((x) => x.id === call.peer);
+  if (!m || call.peer === myId()) return call.close();
+  call.answer();
+  call.on('stream', (stream) => {
+    if (fingerprint(call.peerConnection?.remoteDescription) !== m.fp) return call.close();
+    const old = meet.inc.get(m.id);
+    if (old && old.call !== call) old.call.close();
+    meet.inc.set(m.id, { call, stream });
+    watchLevel(m.id, stream);
+    renderPeople();
+  });
+  call.on('close', () => {
+    if (meet.inc.get(m.id)?.call === call) { meet.inc.delete(m.id); meet.levels.delete(m.id); renderPeople(); }
+  });
+  call.on('error', () => {});
+}
+
+// ----- my mic & camera -----
+// Changes run one at a time, so quick taps on Mic and Camera can't undo
+// each other; whatever isn't being changed keeps its current state.
+let mediaQueue = Promise.resolve();
+function setMedia(change) {
+  mediaQueue = mediaQueue.then(() => applyMedia({ mic: change.mic ?? meet.mic, cam: change.cam ?? meet.cam })).catch(() => {});
+  return mediaQueue;
+}
+async function applyMedia({ mic, cam }) {
+  const tracks = meet.media ? meet.media.getTracks() : [];
+  let audio = tracks.find((t) => t.kind === 'audio');
+  let video = tracks.find((t) => t.kind === 'video');
+  let changed = false;
+  try {
+    if (mic && !audio) {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      audio = s.getAudioTracks()[0];
+      changed = true;
+    }
+    if (cam && !video) {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 }, facingMode: 'user' } });
+      video = s.getVideoTracks()[0];
+      changed = true;
+    }
+  } catch (e) {
+    toast(e.name === 'NotAllowedError' ? 'Allow microphone/camera access in your browser to use this.' : `Could not start ${mic && !audio ? 'microphone' : 'camera'}: ${e.message}`, 5000);
+    return;
+  }
+  if (!cam && video) { video.stop(); video = null; changed = true; }
+  if (audio) audio.enabled = mic;
+  meet.mic = !!(mic && audio);
+  meet.cam = !!(cam && video);
+  meet.media = audio || video ? new MediaStream([audio, video].filter(Boolean)) : null;
+  if (audio && changed) watchLevel('me', new MediaStream([audio]));
+  if (changed) recall();
+  renderMeControls();
+  meetSend({ type: 'state', mic: meet.mic, cam: meet.cam, hand: meet.hand });
+  renderPeople();
+  ensureAudio();
+}
+function stopMedia() {
+  meet.media?.getTracks().forEach((t) => t.stop());
+  meet.media = null;
+  meet.mic = meet.cam = meet.hand = false;
+  for (const c of meet.out.values()) c.close();
+  for (const c of meet.inc.values()) c.call.close();
+  meet.out.clear();
+  meet.inc.clear();
+  meet.levels.clear();
+  meet.roster = [];
+  renderMeControls();
+  renderPeople();
+}
+function toggleHand() {
+  meet.hand = !meet.hand;
+  renderMeControls();
+  meetSend({ type: 'state', mic: meet.mic, cam: meet.cam, hand: meet.hand });
+}
+function renderMeControls() {
+  const set = (id, on, label) => { const b = $(id); if (!b) return; b.classList.toggle('on', on); b.classList.toggle('off', !on); if (label) b.textContent = label; };
+  set('hostMicBtn', meet.mic, meet.mic ? '🎤 Mic on' : '🎤 Mic off');
+  set('hostCamBtn', meet.cam, meet.cam ? '📷 Camera on' : '📷 Camera off');
+  $('micBtn').classList.toggle('on', meet.mic);
+  $('micBtn').title = meet.mic ? 'Mute (M)' : 'Unmute (M)';
+  $('camBtn').classList.toggle('on', meet.cam);
+  $('handBtn').classList.toggle('on', meet.hand);
+}
+
+// ----- speaking indicators -----
+function ensureAudio() {
+  if (!meet.audioCtx && (window.AudioContext || window.webkitAudioContext)) {
+    try { meet.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+  }
+  meet.audioCtx?.resume?.().catch(() => {});
+}
+function watchLevel(id, stream) {
+  const track = stream.getAudioTracks()[0];
+  ensureAudio();
+  if (!track || !meet.audioCtx) return;
+  try {
+    const src = meet.audioCtx.createMediaStreamSource(new MediaStream([track]));
+    const an = meet.audioCtx.createAnalyser();
+    an.fftSize = 512;
+    src.connect(an);
+    meet.levels.set(id, { an, buf: new Uint8Array(an.fftSize) });
+  } catch {}
+}
+setInterval(() => {
+  for (const [id, l] of meet.levels) {
+    l.an.getByteTimeDomainData(l.buf);
+    let sum = 0;
+    for (const v of l.buf) sum += (v - 128) * (v - 128);
+    const speaking = Math.sqrt(sum / l.buf.length) > 6 && (id !== 'me' || meet.mic);
+    document.querySelectorAll(`.tile[data-id="${CSS.escape(id)}"]`).forEach((t) => t.classList.toggle('speaking', speaking));
+  }
+}, 200);
+
+// ----- tiles -----
+function tileFor(m, stream, isMe) {
+  const el = document.createElement('div');
+  el.className = 'tile' + (isMe ? ' me' : '');
+  el.dataset.id = isMe ? 'me' : m.id;
+  const hasVideo = stream?.getVideoTracks().some((t) => t.readyState === 'live');
+  if (stream && (hasVideo || !isMe)) {
+    const v = document.createElement('video');
+    v.autoplay = true;
+    v.playsInline = true;
+    v.muted = isMe; // never play yourself back
+    v.srcObject = stream;
+    v.play().catch(() => { if (!isMe) $('soundBanner').hidden = false; });
+    if (!hasVideo) v.style.opacity = '0';
+    el.append(v);
+  }
+  if (!hasVideo) {
+    const a = document.createElement('div');
+    a.className = 'avatar';
+    const c = document.createElement('span');
+    c.style.background = colorFor(m.name);
+    c.textContent = (m.name.trim()[0] || '?').toUpperCase();
+    a.append(c);
+    el.append(a);
+  }
+  const n = document.createElement('div');
+  n.className = 'name';
+  const flags = `${m.hand ? '✋' : ''}${m.mic ? '' : '🔇'}`;
+  n.textContent = `${flags ? flags + ' ' : ''}${isMe ? 'You' : m.name}`;
+  el.append(n);
+  return el;
+}
+function renderPeople() {
+  const me = myId();
+  const others = meet.roster.filter((m) => m.id && m.id !== me);
+  const self = meet.roster.find((m) => m.id === me) || { name: meName(), mic: meet.mic, cam: meet.cam, hand: meet.hand };
+  const build = () => [
+    tileFor({ ...self, mic: meet.mic, hand: meet.hand }, meet.cam ? meet.media : null, true),
+    ...others.map((m) => tileFor(m, meet.inc.get(m.id)?.stream, false)),
+  ];
+  if (host.peer) $('hostPeople').replaceChildren(...build());
+  if (view.peer) {
+    const box = $('tiles');
+    box.hidden = !meet.people || others.length === 0;
+    box.replaceChildren(...build());
+  }
+}
+$('soundBanner').onclick = () => {
+  document.querySelectorAll('.tile video').forEach((v) => { if (!v.muted) v.play().catch(() => {}); });
+  $('video').play().catch(() => {});
+  ensureAudio();
+  $('soundBanner').hidden = true;
+};
+
+// ----- reactions -----
+function showReaction(m) {
+  const el = document.createElement('div');
+  el.className = 'react';
+  el.style.left = `${10 + Math.random() * 75}%`;
+  el.textContent = m.emoji;
+  const s = document.createElement('small');
+  s.textContent = m.from;
+  el.append(s);
+  $('reactLayer').append(el);
+  setTimeout(() => el.remove(), 3300);
+}
+function buildReactMenu(menu, after) {
+  menu.replaceChildren(...REACTIONS.map((e) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'emoji';
+    b.textContent = e;
+    b.onclick = () => { meetSend({ type: 'react', emoji: e }); after?.(); };
+    return b;
+  }));
+}
+
+// ----- pointer pings -----
+// Where the picture actually is inside a <video> with object-fit: contain.
+function videoRect(video) {
+  const r = video.getBoundingClientRect();
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (!vw || !vh) return r;
+  const s = Math.min(r.width / vw, r.height / vh);
+  const w = vw * s, h = vh * s;
+  return { left: r.left + (r.width - w) / 2, top: r.top + (r.height - h) / 2, width: w, height: h };
+}
+function showPing(m) {
+  const video = host.peer && !view.peer ? $('hostPreview') : $('video');
+  const layer = host.peer && !view.peer ? $('hostPingLayer') : $('pingLayer');
+  const r = videoRect(video);
+  if (!r.width) return;
+  const el = document.createElement('div');
+  el.className = 'ping';
+  el.style.setProperty('--c', colorFor(m.from));
+  el.style.left = `${r.left + m.x * r.width}px`;
+  el.style.top = `${r.top + m.y * r.height}px`;
+  const b = document.createElement('b');
+  b.textContent = m.from;
+  el.append(b);
+  layer.append(el);
+  setTimeout(() => el.remove(), 3400);
+}
+function pingAt(video, e) {
+  const r = videoRect(video);
+  const x = (e.clientX - r.left) / r.width;
+  const y = (e.clientY - r.top) / r.height;
+  if (x < 0 || x > 1 || y < 0 || y > 1) return;
+  meetSend({ type: 'ping', x, y });
+}
+
+// ----- host-side controls -----
+$('hostMicBtn').onclick = () => setMedia({ mic: !meet.mic });
+$('hostCamBtn').onclick = () => setMedia({ cam: !meet.cam });
+$('hostReactBtn').onclick = (e) => {
+  let menu = $('hostReactMenu');
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.id = 'hostReactMenu';
+    menu.className = 'menu';
+    menu.style.position = 'fixed';
+    menu.hidden = true;
+    buildReactMenu(menu, () => (menu.hidden = true));
+    document.body.append(menu);
+  }
+  const r = e.currentTarget.getBoundingClientRect();
+  menu.style.top = `${Math.max(8, r.top - 70)}px`;
+  menu.hidden = !menu.hidden;
+};
+$('previewWrap').onclick = (e) => pingAt($('hostPreview'), e);
+
 // ---------- viewing ----------
 
-const view = { peer: null, conn: null, call: null, statsTimer: null, prev: {}, screens: null, unread: 0, authed: false };
+const view = { peer: null, conn: null, call: null, statsTimer: null, prev: {}, screens: null, unread: 0, authed: false,
+  quality: store.get('quality') || 'auto', join: null, retries: 0, retryTimer: null, noRetry: false, wasLive: false };
 
 $('nameIn').value = store.get('name') || '';
 
@@ -1040,31 +3802,57 @@ const ERRORS = {
 
 function fail(msg) { leave(); showErr($('connectErr'), msg); }
 
-async function connect(codeRaw, password) {
+// The connection dropped after it had been working: try again a few times
+// (Wi-Fi to mobile data, a sleeping laptop...) unless we were sent away.
+function lost(msg) {
+  if (view.noRetry || !view.join || !view.wasLive || view.retries >= 5) return fail(msg);
+  view.retries++;
+  teardown();
+  $('session').hidden = false;
+  overlay(`Connection lost. Reconnecting (${view.retries}/5)…`);
+  view.retryTimer = setTimeout(() => connect(view.join.code, view.join.password, { retry: true }), 1200 * view.retries);
+}
+
+async function connect(codeRaw, password, { retry = false } = {}) {
   const err = $('connectErr');
   showErr(err, '');
   const code = normalizeCode(codeRaw);
   if (code.length !== 9) return showErr(err, 'Enter the 9-digit code from the other device.');
   if (!normalizePassword(password)) return showErr(err, 'Enter the password from the other device.');
   if (view.peer) return;
+  if (!retry) {
+    view.retries = 0;
+    view.noRetry = false;
+    view.wasLive = false;
+  }
+  view.join = { code, password };
+  ensureAudio();
   $('home').hidden = true;
   $('session').hidden = false;
-  overlay('Connecting…');
+  if (!retry) overlay('Connecting…');
   let peer;
   try {
     peer = await newPeer();
   } catch (e) {
-    return fail(e.message);
+    return view.wasLive ? lost(e.message) : fail(e.message);
   }
   view.peer = peer;
-  peer.on('error', (e) => fail(ERRORS[e.type] || 'Connection problem: ' + (e.message || e.type)));
+  peer.on('error', (e) => {
+    // Failing to reach another viewer (who just left) is not our problem.
+    if (e.type === 'peer-unavailable' && !String(e.message).includes('swipe-' + code)) return;
+    if (view.peer !== peer) return;
+    const msg = ERRORS[e.type] || 'Connection problem: ' + (e.message || e.type);
+    view.wasLive ? lost(msg) : fail(msg);
+  });
   peer.on('open', () => {
     const conn = peer.connect('swipe-' + code, { reliable: true, serialization: 'json' });
     view.conn = conn;
     let spake;
     let hostFp = '';
     let authed = false;
-    const timer = setTimeout(() => { if (!authed) fail('The other device did not answer. Check the code and try again.'); }, 25_000);
+    const timer = setTimeout(() => {
+      if (!authed && view.peer === peer) view.wasLive ? lost('The other device did not answer.') : fail('The other device did not answer. Check the code and try again.');
+    }, 25_000);
     conn.on('open', async () => {
       overlay('Checking password…');
       spake = new Spake2('viewer', code, password, { context: handshakeContext(conn, 'viewer') });
@@ -1073,6 +3861,11 @@ async function connect(codeRaw, password) {
     });
     conn.on('data', async (d) => {
       if (d?.type === 'error') return fail(ERRORS[d.error] || d.error);
+      if (d?.type === 'kicked') { view.noRetry = true; return fail('The person sharing disconnected you.'); }
+      if (d?.type === 'ended') { view.noRetry = true; return fail('The other device stopped sharing.'); }
+      if (authed && d?.type === 'roster') return applyRoster(d.list);
+      if (authed && d?.type === 'react' && REACTIONS.includes(d.emoji)) return showReaction({ from: cleanText(d.from, 60), emoji: d.emoji });
+      if (authed && d?.type === 'ping') return showPing({ from: cleanText(d.from, 60), x: Number(d.x) || 0, y: Number(d.y) || 0 });
       if (authed && d?.type === 'chat') return onViewChat({ from: cleanText(d.from, 60), text: cleanText(d.text), system: !!d.system });
       if (authed && d?.type === 'chatHistory' && Array.isArray(d.list)) {
         for (const m of d.list.slice(-30)) onViewChat({ from: cleanText(m.from, 60), text: cleanText(m.text), system: !!m.system }, false);
@@ -1088,15 +3881,22 @@ async function connect(codeRaw, password) {
       const ok = spake.verify(d.confirm);
       const myName = cleanText($('nameIn').value, 30);
       store.set('name', myName);
-      conn.send({ type: 'pake3', confirm, name: myName || deviceName() });
-      if (!ok) return setTimeout(() => fail(ERRORS.auth_failed), 200);
+      conn.send({ type: 'pake3', confirm, name: myName || deviceName(), quality: view.quality });
+      if (!ok) { view.noRetry = true; return setTimeout(() => fail(ERRORS.auth_failed), 200); }
       authed = true;
       view.authed = true;
       clearTimeout(timer);
-      overlay('Starting video…');
+      if (!retry) overlay('Starting video…');
+      // After a reconnect, tell everyone our mic/camera is still on.
+      if (meet.mic || meet.cam || meet.hand) meetSend({ type: 'state', mic: meet.mic, cam: meet.cam, hand: meet.hand });
     });
-    conn.on('close', () => { if (view.conn === conn) fail(authed ? 'The other device stopped sharing.' : 'The connection was closed.'); });
+    conn.on('close', () => {
+      if (view.conn !== conn) return;
+      if (authed && view.wasLive) lost('The other device stopped sharing.');
+      else fail(authed ? 'The other device stopped sharing.' : 'The connection was closed.');
+    });
     peer.on('call', (call) => {
+      if (call.metadata?.kind === 'cam') return authed ? onCamCall(call) : call.close();
       // Only accept media from the device we just verified, over a
       // connection using its verified certificate.
       if (!authed || call.peer !== conn.peer) return call.close();
@@ -1115,10 +3915,13 @@ async function connect(codeRaw, password) {
         video.srcObject = stream;
         video.play().catch(() => {});
         $('soundBtn').hidden = !stream.getAudioTracks().length;
+        view.wasLive = true;
+        view.retries = 0;
         overlay(null);
+        wakeControls();
         try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
       });
-      call.on('close', () => { if (view.call === call) fail('The other device stopped sharing.'); });
+      call.on('close', () => { if (view.call === call) lost('The other device stopped sharing.'); });
     });
   });
 }
@@ -1134,8 +3937,27 @@ function deviceName() {
   return 'Computer';
 }
 
-function leave() {
+// Drop the connection but keep the session screen, chat and our mic/camera
+// (used before reconnecting).
+function teardown() {
   view.authed = false;
+  const { peer } = view;
+  view.peer = view.conn = view.call = null;
+  for (const c of meet.out.values()) c.close();
+  for (const c of meet.inc.values()) c.call.close();
+  meet.out.clear();
+  meet.inc.clear();
+  meet.roster = [];
+  renderPeople();
+  peer?.destroy();
+}
+
+function leave() {
+  clearTimeout(view.retryTimer);
+  view.join = null;
+  view.wasLive = false;
+  teardown();
+  stopMedia();
   view.screens = null;
   view.unread = 0;
   renderViewScreens();
@@ -1143,9 +3965,8 @@ function leave() {
   $('chatBadge').hidden = true;
   $('chatPop').hidden = true;
   $('chatPanel').hidden = true;
-  const { peer } = view;
-  view.peer = view.conn = view.call = null;
-  peer?.destroy();
+  for (const id of ['reactMenu', 'moreMenu', 'soundBanner']) $(id).hidden = true;
+  setPointing(false);
   stopStats();
   const video = $('video');
   video.srcObject = null;
@@ -1196,12 +4017,110 @@ function stopStats() {
   $('stats').hidden = true;
 }
 
+// ---------- viewer: meeting controls ----------
+
+$('micBtn').onclick = () => setMedia({ mic: !meet.mic });
+$('camBtn').onclick = () => setMedia({ cam: !meet.cam });
+$('handBtn').onclick = toggleHand;
+$('reactBtn').onclick = () => {
+  const menu = $('reactMenu');
+  buildReactMenu(menu, () => (menu.hidden = true));
+  $('moreMenu').hidden = true;
+  menu.hidden = !menu.hidden;
+};
+function setPointing(on) {
+  $('pingLayer').classList.toggle('active', on);
+  $('pointBtn').classList.toggle('on', on);
+}
+$('pointBtn').onclick = () => {
+  const on = !$('pingLayer').classList.contains('active');
+  setPointing(on);
+  if (on) toast('Tap anywhere on the screen to point it out to everyone');
+};
+$('pingLayer').addEventListener('click', (e) => pingAt($('video'), e));
+$('moreBtn').onclick = () => {
+  $('reactMenu').hidden = true;
+  $('moreMenu').hidden = !$('moreMenu').hidden;
+};
+$('peopleBtn').onclick = () => {
+  meet.people = !meet.people;
+  $('peopleBtn').textContent = meet.people ? '👥 Hide people' : '👥 Show people';
+  renderPeople();
+};
+function renderQuality() {
+  document.querySelectorAll('#moreMenu [data-q]').forEach((b) => b.classList.toggle('on', b.dataset.q === view.quality));
+}
+document.querySelectorAll('#moreMenu [data-q]').forEach((b) => {
+  b.onclick = () => {
+    view.quality = b.dataset.q;
+    store.set('quality', view.quality);
+    renderQuality();
+    meetSend({ type: 'quality', level: view.quality });
+    toast(view.quality === 'saver' ? 'Data saver: lower resolution, less data' : view.quality === 'sharp' ? 'Sharpest: best for reading small text' : 'Auto quality');
+  };
+});
+renderQuality();
+$('pipBtn').onclick = async () => {
+  const v = $('video');
+  try {
+    if (document.pictureInPictureElement) await document.exitPictureInPicture();
+    else if (v.requestPictureInPicture && document.pictureInPictureEnabled) await v.requestPictureInPicture();
+    else if (v.webkitSupportsPresentationMode?.('picture-in-picture')) v.webkitSetPresentationMode(v.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture');
+    else toast('Picture-in-picture is not supported in this browser');
+  } catch (e) {
+    toast('Picture-in-picture is not available: ' + e.message);
+  }
+};
+
+// Keyboard (and TV remote) shortcuts while watching.
+document.addEventListener('keydown', (e) => {
+  if ($('session').hidden || e.target.closest?.('input, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  wakeControls();
+  if (k === 'f') $('fullBtn').click();
+  else if (k === 'm') $('micBtn').click();
+  else if (k === 'v') $('camBtn').click();
+  else if (k === 'h') $('handBtn').click();
+  else if (k === 'p') $('pointBtn').click();
+  else if (k === 'c') toggleChat();
+  else if (k === 'escape') {
+    for (const id of ['reactMenu', 'moreMenu']) $(id).hidden = true;
+    toggleChat(false);
+    setPointing(false);
+  }
+});
+
+// Controls fade away after a few seconds, like a video player.
+let idleTimer;
+function wakeControls() {
+  $('session').classList.remove('idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    const busy = !$('overlay').hidden || !$('chatPanel').hidden || !$('reactMenu').hidden || !$('moreMenu').hidden || document.activeElement?.closest?.('.bar');
+    if (!busy && !$('session').hidden) $('session').classList.add('idle');
+  }, 4000);
+}
+for (const ev of ['pointermove', 'pointerdown', 'touchstart']) $('session').addEventListener(ev, wakeControls, { passive: true });
+
+// Invite links: #c=CODE&p=PASSWORD fills in (and with both, joins).
+(() => {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const c = normalizeCode(h.get('c'));
+  if (c.length !== 9) return;
+  $('codeIn').value = formatCode(c);
+  const p = h.get('p');
+  if (p) $('pwIn').value = p;
+  history.replaceState(null, '', location.pathname + location.search);
+  if (p) setTimeout(() => connect(c, p), 0);
+  else $('pwIn').focus();
+})();
+
 if (!navigator.mediaDevices?.getDisplayMedia || /Android|iPhone|iPad/.test(navigator.userAgent)) {
   $('shareHint').textContent = "This browser can't share its screen (phones and tablets can't in a browser). Use the Swipe app to share, or connect to another device here.";
   $('shareBtn').disabled = true;
 }
 // Exposed for automated tests.
-window.__swipe = { host, view, connect, startSharing };
+window.__swipe = { host, view, meet, connect, startSharing };
 </script>
 </body>
 </html>

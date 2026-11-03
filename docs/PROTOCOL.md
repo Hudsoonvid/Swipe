@@ -130,3 +130,10 @@ Hosts ignore input while `control` is `"none"`.
 - `pake1`, `pake2`, `pake3`, and `error`.
 - `screens {list, active}` (host → viewer) and `screen {index}` (viewer → host).
 - `chat`, `chatHistory` (as above, keyed by `type` instead of `t`).
+- `roster {list:[{id, name, fp, host, mic, cam, hand}]}` (host → everyone). Each person's PeerJS id comes with the certificate fingerprint the host verified for them.
+- `state {mic, cam, hand}` (viewer → host), which the host folds into the roster.
+- `react {emoji}` and `ping {x, y}` (viewer → host). The host rate-limits them and re-sends them to everyone with `from`. `x` and `y` are 0–1 across the shared picture.
+- `quality {level}` (viewer → host): `auto`, `saver` or `sharp`, which sets the bitrate, frame rate and scale of that viewer's video.
+- `kicked` / `ended` (host → viewer): sent before the host closes the connection, so the viewer doesn't try to reconnect.
+
+Cameras and mics form a mesh. Whoever has one on calls every roster member with PeerJS (`metadata.kind = "cam"`). Receivers accept a call only from a roster member whose connection presents the fingerprint listed in the roster.

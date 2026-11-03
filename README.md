@@ -15,6 +15,16 @@ Share your screen from any device to any other device: phone to iPad, iPad to PC
 
 Devices find each other through the free public [PeerJS](https://peerjs.com) service, which also provides relay servers. The password is still checked end to end, and it's tied to each connection's encryption fingerprint, so the PeerJS service can't learn the password or sit in the middle of the connection.
 
+It also works like a video call:
+
+- **Camera and mic for everyone** (🎤 📷). People show up as tiles, the tile of whoever is talking lights up, and 🔇 shows who's muted.
+- **Raise hand** (✋), **reactions** (😀: 👍 ❤️ 😂 🎉 …), and **Point** (👆): tap the shared screen and everyone sees a marker there with your name.
+- **Chat**, and **switching screens** (◀ ▶) when the sharer offers more than one.
+- **⋯ More** has **picture-in-picture** (keep watching while you use other apps), **quality** (Auto, Data saver for phones on cellular, or Sharpest for small text) and **stats**.
+- **Invite link and QR code** on the sharing page: anyone can scan it with a phone, tablet or TV camera to join. Tick "Include password" to make it one tap.
+- **Reconnects by itself** if the network drops for a moment.
+- **TV-remote and keyboard friendly**: F full screen, M mic, V camera, H hand, P point, C chat, [ ] screens, Esc to close menus. The controls fade away while you watch.
+
 Limits of the single-file version:
 
 - It's watch-only, because a web page can't move your mouse. For remote control, use the full setup below.

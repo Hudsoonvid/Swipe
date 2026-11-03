@@ -125,7 +125,25 @@ class Injector {
   }
 
   _move(evt) {
-    const p = this._point(evt);
+    // Controllers click and scroll wherever the pointer already is.
+    if (!Number.isFinite(evt.x) || !Number.isFinite(evt.y)) return this.robot.getMousePos();
+    return this._moveTo(this._point(evt));
+  }
+
+  // Relative move (controller stick), kept on the shared display.
+  _nudge(evt) {
+    const dx = Math.max(-200, Math.min(200, Math.round(Number(evt.dx) || 0)));
+    const dy = Math.max(-200, Math.min(200, Math.round(Number(evt.dy) || 0)));
+    if (!dx && !dy) return;
+    const b = this.getBounds();
+    const cur = this.robot.getMousePos();
+    this._moveTo({
+      x: Math.min(b.x + b.width - 1, Math.max(b.x, cur.x + dx)),
+      y: Math.min(b.y + b.height - 1, Math.max(b.y, cur.y + dy)),
+    });
+  }
+
+  _moveTo(p) {
     if (this.platform === 'darwin' && this.down.size) {
       // macOS apps need "dragged" events while a button is held.
       this.robot.dragMouse(p.x, p.y, BUTTONS[[...this.down][0]] || 'left');
@@ -150,6 +168,9 @@ class Injector {
     switch (evt.t) {
       case 'pm':
         this._move(evt);
+        break;
+      case 'mm':
+        this._nudge(evt);
         break;
       case 'pd':
       case 'pu': {

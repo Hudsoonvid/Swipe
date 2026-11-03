@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('swipeNative', {
   platform: info.platform,
   hostname: info.hostname,
   defaultServer: info.defaultServer,
+  peerServer: info.peerServer,
   canControl: info.canControl,
   warning: info.warning,
   version: info.version,
@@ -31,4 +32,5 @@ contextBridge.exposeInMainWorld('swipeNative', {
   setStatus: (s) => ipcRenderer.send('status', s),
   notifyViewers: (names) => ipcRenderer.send('viewers', names),
   onCommand: (cb) => ipcRenderer.on('command', (_e, cmd) => cb(cmd)),
+  attention: (msg) => ipcRenderer.send('attention', String(msg ?? '')),
 });

@@ -136,4 +136,15 @@ Hosts ignore input while `control` is `"none"`.
 - `quality {level}` (viewer → host): `auto`, `saver` or `sharp`, which sets the bitrate, frame rate and scale of that viewer's video.
 - `kicked` / `ended` (host → viewer): sent before the host closes the connection, so the viewer doesn't try to reconnect.
 
+### Pairing and remote control (Swipe Host)
+
+Each page keeps one RTCCertificate in IndexedDB (valid 400 days); its DTLS fingerprint is the device's identity.
+
+- After a successful SPAKE2 the host stores the viewer's fingerprint as a **paired device** (`{fp, name, control}`) and the viewer stores the host's as a **PC** (`{code, name, fp}`).
+- If the host has "Ask me before a new device connects" on and the fingerprint isn't paired yet, it sends `waiting` and then either admits the viewer or sends `error {error:"denied"}`.
+- **Trusted reconnect:** a viewer that knows the PC and sees the stored fingerprint on the data connection sends `hello {name, quality}` instead of `pake1`. The host admits it only if the viewer's fingerprint is a paired device, and otherwise replies `needpassword` and closes. Both sides check the certificates WebRTC presents, so the PeerJS service can't replay or redirect a reconnect.
+- Admission: the host sends `welcome {name, platform, control}`. `control` is `"desktop"` when this viewer may use the mouse and keyboard, or `"none"`. The host sends `control {control}` when the owner changes it.
+- Input travels as the `t` messages from section 4 (`pm`, `pd`, `pu`, `wh`, `kd`, `ku`, `tx`) on the reliable connection, except pointer moves, which go on a second PeerJS data connection (`metadata.kind = "input"`, unreliable). The host accepts that connection only from the admitted viewer's fingerprint.
+- Controllers add `{t:"mm", dx, dy}` (relative pointer move in pixels, at most ±200), and `pd`/`pu`/`wh` without `x`, `y` (act at the current pointer position).
+
 Cameras and mics form a mesh. Whoever has one on calls every roster member with PeerJS (`metadata.kind = "cam"`). Receivers accept a call only from a roster member whose connection presents the fingerprint listed in the roster.

@@ -1,10 +1,12 @@
-// Swipe desktop app: hosts the Swipe web client and adds what browsers can't
-// do -- picking a screen without prompts and injecting the remote mouse and
-// keyboard input.
+// Swipe Host app: shares this PC like Steam Link. It runs swipe.html (or the
+// Swipe server's web client when a server is configured) and adds what
+// browsers can't do -- capturing every monitor without prompts and injecting
+// the remote mouse, keyboard and controller input.
 
 'use strict';
 
 const path = require('node:path');
+const fs = require('node:fs/promises');
 const os = require('node:os');
 const {
   app,
@@ -29,6 +31,18 @@ const pkg = require('./package.json');
 const WEB_ROOT = app.isPackaged ? path.join(process.resourcesPath, 'web') : path.join(__dirname, '..', 'web');
 const ICON = path.join(WEB_ROOT, 'icons', 'icon-512.png');
 const DEFAULT_SERVER = process.env.SWIPE_SERVER || pkg.swipeServer || '';
+// Without a Swipe server, the app uses the single-file edition (PeerJS).
+const SWIPE_HTML = app.isPackaged ? path.join(WEB_ROOT, 'swipe.html') : path.join(__dirname, '..', 'swipe.html');
+const START_PAGE = DEFAULT_SERVER ? 'index.html' : 'swipe.html';
+// Optional self-hosted PeerJS server for swipe.html.
+const PEER_SERVER = process.env.SWIPE_PEER_HOST
+  ? {
+      host: process.env.SWIPE_PEER_HOST,
+      port: Number(process.env.SWIPE_PEER_PORT) || 443,
+      path: process.env.SWIPE_PEER_PATH || '/',
+      secure: process.env.SWIPE_PEER_SECURE !== '0',
+    }
+  : null;
 const WAYLAND = process.platform === 'linux' && (process.env.XDG_SESSION_TYPE === 'wayland' || !!process.env.WAYLAND_DISPLAY);
 
 let robot = null;
@@ -116,7 +130,7 @@ function createWindow() {
       backgroundThrottling: false, // keep streaming smoothly while minimized
     },
   });
-  win.loadURL('app://swipe/index.html');
+  win.loadURL(`app://swipe/${START_PAGE}`);
 
   // Open external links in the real browser; never navigate the app away.
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -219,6 +233,7 @@ ipcMain.on('info', (e) => {
     platform: process.platform,
     hostname: os.hostname().replace(/\.local$/, ''),
     defaultServer: DEFAULT_SERVER,
+    peerServer: PEER_SERVER,
     canControl: canControl(),
     warning: controlWarning(),
     version: app.getVersion(),
@@ -239,6 +254,13 @@ ipcMain.on('input', (_e, evt) => {
 
 ipcMain.on('release-input', () => injector?.releaseAll());
 
+// A device is asking to connect: bring the window up so someone can answer.
+ipcMain.on('attention', (_e, msg) => {
+  showWindow();
+  win?.flashFrame(true);
+  notify('Swipe', String(msg || 'A device wants to connect').slice(0, 200));
+});
+
 ipcMain.on('status', (_e, s) => {
   hostStatus = { ...hostStatus, ...s };
   updateTray();
@@ -258,7 +280,20 @@ app.on('second-instance', showWindow);
 app.whenReady().then(async () => {
   protocol.handle('app', async (req) => {
     const url = new URL(req.url);
-    const rel = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'index.html';
+    const rel = decodeURIComponent(url.pathname).replace(/^\/+/, '') || START_PAGE;
+    if (rel === 'swipe.html') {
+      // Single file with inline scripts and styles; PeerJS comes bundled.
+      return new Response(await fs.readFile(SWIPE_HTML), {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Security-Policy':
+            "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' https: wss: http: ws:; frame-ancestors 'none'",
+        },
+      });
+    }
+    if (rel === 'peerjs.min.js') {
+      return new Response(await fs.readFile(require.resolve('peerjs/dist/peerjs.min.js')), { headers: { 'Content-Type': 'text/javascript' } });
+    }
     const file = path.normalize(path.join(WEB_ROOT, rel));
     if (!file.startsWith(WEB_ROOT + path.sep)) return new Response('Forbidden', { status: 403 });
     const res = await net.fetch(pathToFileURL(file).toString());
@@ -276,10 +311,12 @@ app.whenReady().then(async () => {
   // Screen capture without the browser's picker: the viewer chooses the
   // display from its toolbar, the app selects it here.
   session.defaultSession.setDisplayMediaRequestHandler(
-    async (_request, callback) => {
+    async (request, callback) => {
       try {
         const source = await sourceForSelected();
-        callback(source ? { video: source } : {});
+        // Windows can also capture what the PC is playing.
+        const audio = request.audioRequested && process.platform === 'win32' ? { audio: 'loopback' } : {};
+        callback(source ? { video: source, ...audio } : {});
       } catch (e) {
         console.error('capture failed', e);
         callback({});

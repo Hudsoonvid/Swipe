@@ -6,9 +6,11 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { chromium, _electron } from 'playwright-core';
 import { createServer } from '../../server/src/server.js';
@@ -26,13 +28,16 @@ function findElectron() {
 const electronBin = process.platform === 'linux' && process.env.DISPLAY ? findElectron() : null;
 const skip = !electronBin || !existsSync(electronBin) ? 'needs Linux + X display + `npm install` in desktop/' : false;
 
-let srv, base, browser, app;
+let srv, base, browser, app, peerServer, peerPort, userData;
 
 before(async () => {
   if (skip) return;
   srv = createServer({ stunUrls: [], limits: { joinBurst: 100 } });
   await new Promise((r) => srv.server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${srv.server.address().port}`;
+  peerServer = spawn(process.execPath, [path.join(root, 'tests', 'tools', 'peer-server.mjs')], { stdio: ['ignore', 'pipe', 'inherit'] });
+  peerPort = await new Promise((resolve) => peerServer.stdout.once('data', (d) => resolve(Number(String(d).trim()))));
+  userData = mkdtempSync(path.join(os.tmpdir(), 'swipe-host-'));
   browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--autoplay-policy=no-user-gesture-required'] });
 });
 
@@ -40,6 +45,8 @@ after(async () => {
   await app?.close().catch(() => {});
   await browser?.close();
   await srv?.close();
+  peerServer?.kill();
+  if (userData) rmSync(userData, { recursive: true, force: true });
 });
 
 test('desktop app: viewer sees the real screen and types into it', { skip, timeout: 90_000 }, async () => {
@@ -99,5 +106,62 @@ test('desktop app: viewer sees the real screen and types into it', { skip, timeo
   await page.keyboard.press('Backspace');
   await win.waitForFunction(() => document.getElementById('codeInput').value.replace(/\s/g, '') === '4', null, { timeout: 5000 });
 
+  await ctx.close();
+});
+
+test('Swipe Host app (swipe.html): approve a device, then it controls the PC', { skip, timeout: 120_000 }, async () => {
+  await app?.close().catch(() => {});
+  const env = { ...process.env, SWIPE_PEER_HOST: '127.0.0.1', SWIPE_PEER_PORT: String(peerPort), SWIPE_PEER_SECURE: '0' };
+  delete env.SWIPE_SERVER;
+  app = await _electron.launch({ executablePath: electronBin, args: ['--no-sandbox', `--user-data-dir=${userData}`, desktopDir], env });
+  const win = await app.firstWindow();
+  // The app starts sharing by itself, with a password that stays the same.
+  await win.waitForFunction(() => /^\d{3} \d{3} \d{3}$/.test(document.getElementById('myCode')?.textContent || '') && document.getElementById('shareStatus').textContent.includes('Waiting'), null, { timeout: 30_000 });
+  const code = (await win.textContent('#myCode')).replace(/\s/g, '');
+  const password = await win.textContent('#myPw');
+  assert.equal(await win.evaluate(() => window.swipeNative.canControl), true);
+  assert.match(await win.textContent('#controlNote'), /Remote control is on/);
+
+  const target = await win.evaluate(() => {
+    const el = document.getElementById('codeIn');
+    el.scrollIntoView({ block: 'center' });
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  });
+  const geo = await app.evaluate(({ BrowserWindow, screen }) => {
+    const w = BrowserWindow.getAllWindows()[0];
+    w.setAlwaysOnTop(true);
+    return { content: w.getContentBounds(), display: screen.getPrimaryDisplay().bounds };
+  });
+  const nx = (geo.content.x + target.x - geo.display.x) / geo.display.width;
+  const ny = (geo.content.y + target.y - geo.display.y) / geo.display.height;
+
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await ctx.route(/peerjs\.min\.js$/, (route) => route.fulfill({ path: createRequire(import.meta.url).resolve('peerjs/dist/peerjs.min.js'), contentType: 'text/javascript' }));
+  const page = await ctx.newPage();
+  await page.goto(`${pathToFileURL(path.join(root, 'swipe.html'))}?peerHost=127.0.0.1&peerPort=${peerPort}&peerSecure=0`);
+  await page.fill('#codeIn', code);
+  await page.fill('#pwIn', password);
+  await page.fill('#nameIn', 'Laptop');
+  await page.click('#connectBtn');
+  // Someone at the PC accepts the new device.
+  await win.waitForSelector('#askBox:not([hidden])', { timeout: 30_000 });
+  await win.click('#askAllow');
+  await page.waitForFunction(() => {
+    const v = document.getElementById('video');
+    return v.videoWidth > 0 && v.currentTime > 0.2 && document.getElementById('overlay').hidden && window.__swipe.view.control === 'desktop';
+  }, null, { timeout: 40_000 });
+  await win.evaluate(() => document.activeElement?.blur());
+
+  // Click the PC's code field through the stream and type into it.
+  const box = await page.locator('#video').boundingBox();
+  await page.mouse.move(box.x + nx * box.width - 20, box.y + ny * box.height);
+  await page.mouse.click(box.x + nx * box.width, box.y + ny * box.height);
+  await win.waitForFunction(() => document.activeElement?.id === 'codeIn', null, { timeout: 5000 });
+  await page.keyboard.type('42');
+  await win.waitForFunction(() => document.getElementById('codeIn').value.replace(/\s/g, '').endsWith('42'), null, { timeout: 5000 });
+  await page.keyboard.press('Backspace');
+  await win.waitForFunction(() => document.getElementById('codeIn').value.replace(/\s/g, '').endsWith('4'), null, { timeout: 5000 });
+  assert.match(await win.textContent('#deviceList'), /Laptop/);
   await ctx.close();
 });

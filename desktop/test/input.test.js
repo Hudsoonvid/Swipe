@@ -20,6 +20,10 @@ function fakeRobot() {
       calls.push(['keyToggle', k, d]);
     },
     typeString: rec('typeString'),
+    pos: { x: 3000, y: 700 },
+    getMousePos() {
+      return { ...this.pos };
+    },
   };
 }
 
@@ -118,4 +122,25 @@ test('wheel deltas per platform', () => {
   inj.handle({ t: 'wh', x: 0.5, y: 0.5, dx: 0, dy: 30 });
   inj.handle({ t: 'wh', x: 0.5, y: 0.5, dx: 0, dy: 30 });
   assert.deepEqual(r.calls.filter((c) => c[0] === 'scrollMouse'), [['scrollMouse', -0, -1]]);
+});
+
+test('controller: relative moves stay on the shared display; clicks and scrolls stay put', () => {
+  const r = fakeRobot();
+  const inj = new Injector({ robot: r, getBounds: bounds, platform: 'linux' });
+  inj.handle({ t: 'mm', dx: 24, dy: -10 });
+  r.pos = { x: 1925, y: 5 };
+  inj.handle({ t: 'mm', dx: -24, dy: -24 }); // clamped to the display's corner
+  inj.handle({ t: 'mm', dx: 99999, dy: 0 }); // capped per event
+  inj.handle({ t: 'mm', dx: 0, dy: 0 });
+  inj.handle({ t: 'pd', b: 0 });
+  inj.handle({ t: 'pu', b: 0 });
+  inj.handle({ t: 'wh', dx: 0, dy: 100 });
+  assert.deepEqual(r.calls.filter((c) => c[0] !== 'setMouseDelay' && c[0] !== 'setKeyboardDelay'), [
+    ['moveMouse', 3024, 690],
+    ['moveMouse', 1920, 0],
+    ['moveMouse', 2125, 5],
+    ['mouseToggle', 'down', 'left'],
+    ['mouseToggle', 'up', 'left'],
+    ['scrollMouse', -0, -2],
+  ]);
 });

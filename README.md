@@ -15,6 +15,23 @@ Share your screen from any device to any other device: phone to iPad, iPad to PC
 
 Devices find each other through the free public [PeerJS](https://peerjs.com) service, which also provides relay servers. The password is still checked end to end, and it's tied to each connection's encryption fingerprint, so the PeerJS service can't learn the password or sit in the middle of the connection.
 
+### Control your PC from any device (like Steam Link)
+
+1. On the PC, install the **Swipe Host** app (the desktop app from [Releases](../../releases), or `npm ci --prefix desktop && npm start --prefix desktop`). It starts sharing by itself and keeps the same code and password, so your PC is always reachable. Close the window and it keeps running in the tray. Use *Start Swipe when I log in* in the tray menu to have it there after every restart.
+2. On your phone, iPad, laptop or TV, open https://hudsoonvid.github.io/Swipe/, enter the PC's code and password, and tap **Connect**.
+3. The first time, the PC asks **"Allow?"**. Click *Allow* there. That device is now **paired**: it shows up under **My PCs**, and next time you just tap the PC, with no password.
+
+While connected you control the PC:
+
+- **Mouse and keyboard** work as usual. In full screen, Esc, Alt+Tab and similar keys go to the PC.
+- **Touch** (phone or iPad): *Direct* mode (tap = click, long-press = right-click) or *Trackpad* mode (👆 button). Two fingers scroll, pinch zooms. ⌨ opens the keyboard. ⌘ Keys has Esc, Tab, arrows, Ctrl/Alt/Win, Alt+Tab and *Paste text*.
+- **Game controllers** (Xbox, PlayStation, Switch Pro, or a TV remote that acts as one): plug one into the device you're holding. *Games* layout: left stick = WASD, right stick = mouse look, RT = click, LT = right-click, A = Space, and so on. *Desktop* layout: stick = mouse, A = click. Switch layouts in ⋯.
+- **◀ ▶** switches between the PC's monitors.
+
+Security: the first connection needs the password, plus a click on the PC when "Ask me before a new device connects" is on (the default in the app). After that, the PC and the device recognise each other by the encryption certificate each one keeps, and a different device can't reuse that. Under **Paired devices** on the PC you can make any device **view only** or **Remove** it (it then needs the password again). Nothing passes through a server in a readable form: the password check (SPAKE2) and the video/input encryption (DTLS) are end to end.
+
+A browser tab can share its screen too, but it can't be controlled: a web page isn't allowed to move your mouse. That's what the app is for.
+
 It also works like a video call:
 
 - **Camera and mic for everyone** (🎤 📷). People show up as tiles, the tile of whoever is talking lights up, and 🔇 shows who's muted.
@@ -27,8 +44,8 @@ It also works like a video call:
 
 Limits of the single-file version:
 
-- It's watch-only, because a web page can't move your mouse. For remote control, use the full setup below.
-- Screen sharing only works from a desktop browser.
+- Remote control needs the Swipe Host app on the PC (see above). Sharing from a plain browser tab is watch-only.
+- Screen sharing only works from a computer.
 - Some online editors run pages in a frame that blocks screen capture. If **Share my screen** says it's blocked, open the saved file directly. Viewing works anywhere.
 
 `swipe.html` is generated: edit `standalone/template.html` and run `npm run build:standalone`.
@@ -37,7 +54,7 @@ Limits of the single-file version:
 
 | This device… | Share its screen | Be controlled remotely | View & control others |
 | --- | --- | --- | --- |
-| Windows / Mac / Linux, **Swipe desktop app** | ✅ | ✅ mouse + keyboard | ✅ |
+| Windows / Mac / Linux, **Swipe Host app** | ✅ | ✅ mouse, keyboard, controller | ✅ |
 | Windows / Mac / Linux / Chromebook, **browser** | ✅ | ❌ view only (browsers can't move your mouse) | ✅ |
 | Android, **Swipe app** | ✅ | ✅ taps, swipes, typing, back/home | ✅ |
 | iPhone / iPad, **Swipe app** | ✅ | ❌ view only (Apple doesn't allow it, see below) | ✅ |
@@ -70,6 +87,8 @@ Every device connects through your Swipe server. The server pairs devices by cod
   - Linux: remote control needs an X11 ("Xorg") session; Wayland blocks synthetic input.
 - **Android:** install `Swipe-android.apk` from Releases (allow installing from your browser). To allow remote control, tap *Turn on remote control* in the app and enable **Swipe remote control**. On Android 13+, if the switch is greyed out, go to *App info → ⋮ → Allow restricted settings* first.
 - **iPhone / iPad:** open `ios/` on a Mac, run `brew install xcodegen && cd ios && xcodegen generate`, open `Swipe.xcodeproj`, choose your Apple ID team under *Signing & Capabilities* for both targets (change the bundle IDs and the App Group if Xcode asks), and run it on your device. CI also produces an unsigned `.ipa` for sideloading tools.
+
+Without a server address, the desktop app runs as **Swipe Host** (the single-file edition with remote control, above); with one, it uses your Swipe server. Set `SWIPE_PEER_HOST`, `SWIPE_PEER_PORT`, `SWIPE_PEER_PATH` and `SWIPE_PEER_SECURE=0|1` to use your own PeerJS server instead of the public one.
 
 In each app, enter your server address in Settings. To skip this step, set a repository variable `SWIPE_SERVER` (for example `https://swipe.example.com`) before building, and it's baked into the desktop, Android and iOS builds.
 

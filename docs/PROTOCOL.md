@@ -129,10 +129,6 @@ Hosts ignore input while `control` is `"none"`.
 
 - `pake1`, `pake2`, `pake3`, and `error`.
 - `screens {list, active}` (host → viewer) and `screen {index}` (viewer → host).
-- `chat`, `chatHistory` (as above, keyed by `type` instead of `t`).
-- `roster {list:[{id, name, fp, host, mic, cam, hand}]}` (host → everyone). Each person's PeerJS id comes with the certificate fingerprint the host verified for them.
-- `state {mic, cam, hand}` (viewer → host), which the host folds into the roster.
-- `react {emoji}` and `ping {x, y}` (viewer → host). The host rate-limits them and re-sends them to everyone with `from`. `x` and `y` are 0–1 across the shared picture.
 - `quality {level}` (viewer → host): `auto`, `saver` or `sharp`, which sets the bitrate, frame rate and scale of that viewer's video.
 - `kicked` / `ended` (host → viewer): sent before the host closes the connection, so the viewer doesn't try to reconnect.
 
@@ -143,8 +139,6 @@ Each page keeps one RTCCertificate in IndexedDB (valid 400 days); its DTLS finge
 - After a successful SPAKE2 the host stores the viewer's fingerprint as a **paired device** (`{fp, name, control}`) and the viewer stores the host's as a **PC** (`{code, name, fp}`).
 - If the host has "Ask me before a new device connects" on and the fingerprint isn't paired yet, it sends `waiting` and then either admits the viewer or sends `error {error:"denied"}`.
 - **Trusted reconnect:** a viewer that knows the PC and sees the stored fingerprint on the data connection sends `hello {name, quality}` instead of `pake1`. The host admits it only if the viewer's fingerprint is a paired device, and otherwise replies `needpassword` and closes. Both sides check the certificates WebRTC presents, so the PeerJS service can't replay or redirect a reconnect.
-- Admission: the host sends `welcome {name, platform, control}`. `control` is `"desktop"` when this viewer may use the mouse and keyboard, or `"none"`. The host sends `control {control}` when the owner changes it.
+- Admission: the host sends `welcome {name, platform, control, why}`. `control` is `"desktop"` when this viewer may use the mouse and keyboard, or `"none"`; then `why` says what to fix: `"none-browser"` (shared from a browser tab, install Swipe Host), `"none-permission"` (Swipe Host lacks OS permission) or `"none-denied"` (the owner set this device to view only). The host sends `control {control}` when the owner changes it.
 - Input travels as the `t` messages from section 4 (`pm`, `pd`, `pu`, `wh`, `kd`, `ku`, `tx`) on the reliable connection, except pointer moves, which go on a second PeerJS data connection (`metadata.kind = "input"`, unreliable). The host accepts that connection only from the admitted viewer's fingerprint.
 - Controllers add `{t:"mm", dx, dy}` (relative pointer move in pixels, at most ±200), and `pd`/`pu`/`wh` without `x`, `y` (act at the current pointer position).
-
-Cameras and mics form a mesh. Whoever has one on calls every roster member with PeerJS (`metadata.kind = "cam"`). Receivers accept a call only from a roster member whose connection presents the fingerprint listed in the roster.

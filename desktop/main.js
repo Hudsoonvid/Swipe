@@ -119,7 +119,7 @@ function createWindow() {
     minWidth: 380,
     minHeight: 560,
     backgroundColor: '#0b0e14',
-    title: 'Swipe',
+    title: 'Swipe Host',
     icon: ICON,
     autoHideMenuBar: true,
     webPreferences: {
@@ -342,6 +342,14 @@ app.whenReady().then(async () => {
     win?.webContents.send('screens-changed');
   });
   screen.on('display-metrics-changed', () => robot?.updateScreenMetrics?.());
+
+  // Like Steam Link: the PC should be reachable after a restart, so start
+  // with the computer by default (once; the tray menu can turn it off).
+  const firstRun = path.join(app.getPath('userData'), 'first-run-done');
+  if (process.platform !== 'linux' && app.isPackaged && !require('node:fs').existsSync(firstRun)) {
+    app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true, args: ['--hidden'] });
+    require('node:fs').writeFileSync(firstRun, '1');
+  }
 
   createTray();
   if (process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAsHidden) {

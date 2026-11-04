@@ -84,62 +84,23 @@
   .screens { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:12px 0 4px; }
   .screens .label { font-size:.85rem; color:var(--muted); font-weight:600; margin-right:4px; }
   .chip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
-  .chat { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
-  .chat li { font-size:.92rem; line-height:1.35; overflow-wrap:anywhere; }
-  .chat li b { color:#9cc0ff; margin-right:6px; }
-  .chat li.sys { color:var(--muted); font-size:.82rem; font-style:italic; }
-  .chat-form { display:flex; gap:6px; margin-top:8px; }
-  .chat-form input { flex:1; min-width:0; font:inherit; font-size:.95rem; letter-spacing:normal; padding:9px 12px; }
-  .chat-form button { flex:none; padding:9px 14px; }
-  .host-chat { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
-  .host-chat h3 { margin:0 0 8px; font-size:.95rem; }
-  .host-chat .chat { max-height:220px; min-height:40px; }
-  .chat-panel { position:absolute; right:8px; top:60px; bottom:8px; width:min(340px, calc(100% - 16px)); display:flex; flex-direction:column; padding:12px; border-radius:14px; background:rgba(18,23,34,.94); border:1px solid rgba(255,255,255,.08); z-index:4; }
-  .chat-panel header { display:flex; justify-content:space-between; align-items:center; font-weight:700; margin-bottom:8px; }
-  .chat-panel header button { border:0; background:none; color:var(--text); font-size:1.1rem; cursor:pointer; padding:2px 8px; }
-  .chat-panel .chat { flex:1; }
-  .chat-pop { position:absolute; right:12px; bottom:16px; max-width:min(320px, calc(100% - 24px)); padding:8px 12px; border-radius:12px; background:rgba(18,23,34,.92); border:1px solid rgba(255,255,255,.1); font-size:.9rem; z-index:3; overflow-wrap:anywhere; }
-  .chat-pop b { color:#9cc0ff; margin-right:6px; }
-  .badge { display:inline-block; min-width:18px; padding:0 5px; margin-left:4px; border-radius:9px; background:var(--danger); color:#fff; font-size:.75rem; line-height:18px; }
+  .section { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+  .section h3 { margin:0 0 8px; font-size:.95rem; }
   .screen-label { align-self:center; padding:0 4px; font-size:.85rem; font-weight:600; white-space:nowrap; }
   .short { display:none; }
-  /* meeting: people tiles, reactions, pings, menus */
-  .tiles { position:absolute; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom,0px)); display:flex; gap:8px; overflow-x:auto; z-index:2; padding-bottom:2px; justify-content:flex-start; transition:opacity .3s; }
-  .tile { position:relative; flex:none; width:150px; aspect-ratio:16/10; border-radius:12px; overflow:hidden; background:#1b2232; border:2px solid rgba(255,255,255,.08); box-shadow:0 4px 16px rgba(0,0,0,.4); }
-  .tile.speaking { border-color:var(--ok); box-shadow:0 0 0 3px rgba(61,220,151,.35); }
-  .tile video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
-  .tile.me video { transform:scaleX(-1); }
-  .tile .avatar { position:absolute; inset:0; display:grid; place-items:center; font-size:1.6rem; font-weight:700; color:#fff; }
-  .tile .avatar span { width:52px; height:52px; border-radius:50%; display:grid; place-items:center; }
-  .tile .name { position:absolute; left:6px; bottom:6px; right:6px; display:flex; gap:4px; align-items:center; font-size:.78rem; font-weight:600; text-shadow:0 1px 3px #000; white-space:nowrap; overflow:hidden; }
-  .tile .name i { font-style:normal; }
-  .people-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-  .people-grid .tile { width:140px; }
-  .me-controls { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-  .chip.off { opacity:.75; }
-  .react-layer { position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden; }
-  .react { position:absolute; bottom:70px; font-size:2.2rem; animation:floatUp 3.2s ease-out forwards; text-align:center; }
-  .react small { display:block; font-size:.7rem; font-weight:700; color:#fff; text-shadow:0 1px 3px #000; }
-  @keyframes floatUp { 0% { transform:translateY(0) scale(.6); opacity:0; } 10% { opacity:1; transform:translateY(-20px) scale(1.1); } 100% { transform:translateY(-55vh) scale(1); opacity:0; } }
-  .ping-layer { position:fixed; inset:0; pointer-events:none; z-index:5; }
-  .ping-layer.active { pointer-events:auto; cursor:crosshair; }
-  .ping { position:absolute; width:0; height:0; }
-  .ping::before { content:''; position:absolute; left:-18px; top:-18px; width:36px; height:36px; border-radius:50%; border:3px solid var(--c); animation:ping 1.6s ease-out 2; }
-  .ping::after { content:''; position:absolute; left:-5px; top:-5px; width:10px; height:10px; border-radius:50%; background:var(--c); }
-  .ping b { position:absolute; left:14px; top:8px; padding:2px 6px; border-radius:6px; background:var(--c); color:#000; font-size:.72rem; white-space:nowrap; }
-  @keyframes ping { from { transform:scale(.4); opacity:1; } to { transform:scale(2.2); opacity:0; } }
   .menu { position:absolute; top:62px; left:50%; transform:translateX(-50%); display:flex; flex-wrap:wrap; justify-content:center; gap:6px; max-width:min(420px, calc(100% - 16px)); padding:10px; border-radius:14px; background:rgba(18,23,34,.95); border:1px solid rgba(255,255,255,.08); z-index:5; }
   .menu button { border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.06); color:var(--text); border-radius:10px; padding:8px 12px; font:inherit; font-size:.9rem; cursor:pointer; }
   .menu button.on { background:var(--accent); border-color:var(--accent); }
-  .menu .emoji { font-size:1.6rem; padding:4px 10px; }
   .menu .sep { flex-basis:100%; height:0; }
   .menu .hint { flex-basis:100%; color:var(--muted); font-size:.78rem; text-align:center; }
   .bar button.on { background:rgba(76,141,255,.35); }
   .bar button.red { color:var(--danger); }
-  .banner { position:absolute; left:50%; top:62px; transform:translateX(-50%); z-index:6; padding:8px 14px; border-radius:12px; background:var(--accent); color:#fff; font-weight:600; border:0; cursor:pointer; }
-  .session.idle .bar, .session.idle .tiles { opacity:0; }
+  .note { position:absolute; left:50%; bottom:calc(16px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:4; width:min(460px, calc(100% - 16px)); padding:12px 14px; border-radius:12px; background:#2a2412; border:1px solid #6b5a1f; font-size:.9rem; }
+  .note b { display:block; margin-bottom:4px; }
+  .note button { margin-top:8px; }
+  .session.idle .bar { opacity:0; }
   .session.idle { cursor:none; }
-  .preview-wrap { position:relative; margin-top:12px; border-radius:12px; overflow:hidden; background:#000; aspect-ratio:16/9; cursor:crosshair; }
+  .preview-wrap { position:relative; margin-top:12px; border-radius:12px; overflow:hidden; background:#000; aspect-ratio:16/9; }
   .preview-wrap video { width:100%; height:100%; object-fit:contain; display:block; }
   .preview-wrap .tag { position:absolute; left:8px; top:8px; padding:2px 8px; border-radius:8px; background:rgba(0,0,0,.6); font-size:.75rem; font-weight:600; }
   .invite { display:flex; gap:12px; align-items:center; margin-top:12px; padding:12px; border-radius:14px; background:var(--bg2); border:1px solid var(--line); }
@@ -154,13 +115,15 @@
     .bar { max-width:calc(100% - 16px); overflow-x:auto; }
   }
   @media (max-width:600px) {
-    .chat-panel { top:auto; height:55%; left:8px; right:8px; width:auto; }
     .bar { max-width:calc(100% - 16px); overflow-x:auto; gap:0; }
     .bar button { min-width:38px; padding:0 9px; }
-    .tile { width:110px; }
     .menu { top:auto; bottom:80px; }
     .long { display:none; } .short { display:inline; }
   }
+  .get-host { display:grid; gap:8px; margin-top:14px; }
+  .get-host a.btn { display:block; text-align:center; text-decoration:none; }
+  .get-host .btn.primary { margin-top:0; }
+  .link { background:none; border:0; color:var(--muted); text-decoration:underline; font:inherit; font-size:.88rem; cursor:pointer; padding:6px 0; }
   .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); max-width:calc(100% - 32px); padding:10px 16px; border-radius:12px; background:#222b3b; border:1px solid var(--line); z-index:50; font-size:.92rem; }
 </style>
 </head>
@@ -169,15 +132,15 @@
   <div class="brand"><div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="5" width="12" height="9" rx="2"/><rect x="14" y="10" width="7" height="10" rx="2" fill="#fff"/></svg></div>Swipe</div>
   <div class="cards">
     <section class="card">
-      <h2>Connect to a device</h2>
-      <p class="muted">Enter the code and password shown on the device you want to see.</p>
+      <h2>Use my PC</h2>
+      <p class="muted">Enter the code and password shown in Swipe Host on your PC. After the first time, just tap the PC below.</p>
       <form id="connectForm" autocomplete="off">
         <label for="codeIn">Code</label>
         <input id="codeIn" inputmode="numeric" placeholder="123 456 789" maxlength="11" />
         <label for="pwIn">Password</label>
         <input id="pwIn" placeholder="ABCD-EFGH" autocapitalize="characters" autocorrect="off" spellcheck="false" />
-        <label for="nameIn">Your name <span class="muted">(shown in chat, optional)</span></label>
-        <input id="nameIn" maxlength="30" placeholder="e.g. Sam" autocomplete="nickname" style="font:inherit;letter-spacing:normal" />
+        <label for="nameIn">Name for this device <span class="muted">(shown on the PC, optional)</span></label>
+        <input id="nameIn" maxlength="30" placeholder="e.g. My iPad" autocomplete="off" style="font:inherit;letter-spacing:normal" />
         <button class="btn primary" id="connectBtn" type="submit">Connect</button>
         <p class="error" id="connectErr" hidden></p>
       </form>
@@ -188,10 +151,19 @@
       </div>
     </section>
     <section class="card">
-      <h2>Share this screen</h2>
+      <h2 id="shareTitle">Set up this PC</h2>
       <div id="shareIdle">
-        <p class="muted" id="shareHint">Show this device's screen on another device. Works in Chrome, Edge, Firefox and Safari on computers.</p>
-        <button class="btn primary" id="shareBtn" type="button">Share my screen</button>
+        <div id="getHost">
+          <p class="muted">To use this PC from your phone, iPad or another computer, install <b>Swipe Host</b> on it. A web page can't move the mouse or type, so the app does that. It starts with the PC and shows a code and password.</p>
+          <div class="get-host">
+            <a class="btn primary" id="dlMain" href="https://github.com/Hudsoonvid/Swipe/releases/latest">Download Swipe Host</a>
+            <span class="muted small" id="dlOthers"></span>
+          </div>
+          <p class="muted small" id="dlNote"></p>
+          <button class="link" id="viewOnlyBtn" type="button">Or share this screen view-only from the browser (no control)</button>
+        </div>
+        <p class="muted" id="shareHint" hidden></p>
+        <button class="btn primary" id="shareBtn" type="button" hidden>Start</button>
         <p class="error" id="shareErr" hidden></p>
       </div>
       <div id="shareOn" hidden>
@@ -201,7 +173,7 @@
         <div class="ask" id="askBox" hidden><p id="askText"></p><div class="acts"><button class="btn" id="askAllow" type="button" style="background:var(--ok);color:#000;border:0">Allow</button><button class="btn" id="askDeny" type="button">Deny</button></div></div>
         <p class="control-note" id="controlNote"></p>
         <ul class="viewers" id="viewerList"></ul>
-        <div class="host-chat" id="devicesBox">
+        <div class="section" id="devicesBox">
           <h3>Paired devices</h3>
           <ul class="devices" id="deviceList"></ul>
           <label class="check"><input type="checkbox" id="askNew" /> Ask me before a new device connects</label>
@@ -209,37 +181,22 @@
         <div class="invite" id="invite" hidden>
           <div class="qr" id="inviteQr"></div>
           <div class="actions">
-            <button class="chip" id="copyLinkBtn" type="button">Copy invite link</button>
-            <label class="muted small" style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="linkPw" style="width:auto" /> Include password (joins in one tap)</label>
-            <span class="muted">Scan with a phone, tablet or TV camera to join.</span>
+            <button class="chip" id="copyLinkBtn" type="button">Copy link</button>
+            <label class="muted small" style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="linkPw" style="width:auto" /> Include password (connects in one tap)</label>
+            <span class="muted">Scan with your phone or tablet camera to connect.</span>
           </div>
         </div>
-        <div class="preview-wrap" id="previewWrap" title="Click to point at something for everyone">
+        <div class="preview-wrap" id="previewWrap">
           <video id="hostPreview" muted playsinline autoplay></video>
-          <span class="tag">What everyone sees · click to point</span>
+          <span class="tag">What your devices see</span>
         </div>
         <div class="screens" id="hostScreens"></div>
-        <div class="host-chat">
-          <h3>People</h3>
-          <div class="me-controls">
-            <button class="chip off" id="hostMicBtn" type="button">🎤 Mic off</button>
-            <button class="chip off" id="hostCamBtn" type="button">📷 Camera off</button>
-            <button class="chip" id="hostReactBtn" type="button">😀 React</button>
-          </div>
-          <div class="people-grid" id="hostPeople"></div>
-        </div>
-        <div class="host-chat">
-          <h3>Chat</h3>
-          <ul class="chat" id="hostChat"></ul>
-          <form class="chat-form" id="hostChatForm" autocomplete="off"><input id="hostChatIn" maxlength="500" placeholder="Message everyone watching" /><button class="btn" type="submit">Send</button></form>
-        </div>
         <button class="btn danger" id="stopBtn" type="button">Stop sharing</button>
       </div>
     </section>
   </div>
   <p class="foot muted small">
-    Video goes directly between your devices, encrypted. The password never leaves your devices.<br />
-    In a browser, others can watch your screen but can't control it. For remote control, use the Swipe apps.
+    Video and input go directly between your devices, encrypted. The password never leaves your devices.
   </p>
 </main>
 
@@ -257,26 +214,15 @@
     <button id="keysBtn" type="button" title="Special keys (Esc, Ctrl, Alt…)" hidden>⌘<span class="long"> Keys</span></button>
     <button id="modeBtn" type="button" title="Touch mode" hidden>👆<span class="long"> Direct</span></button>
     <button id="padBtn" type="button" title="Game controller" hidden>🎮</button>
-    <button id="chatBtn" type="button" title="Chat (C)">💬<span class="long"> Chat</span><span class="badge" id="chatBadge" hidden></span></button>
     <button id="soundBtn" type="button" hidden>Unmute</button>
     <button id="fullBtn" type="button" title="Full screen"><span class="long">Full screen</span><span class="short">⛶</span></button>
     <button id="moreBtn" type="button" title="More">⋯</button>
   </div>
   <div data-ui class="stats" id="stats" hidden></div>
-  <div data-ui class="ping-layer" id="pingLayer"></div>
-  <div data-ui class="tiles" id="tiles"></div>
-  <div data-ui class="menu" id="reactMenu" hidden></div>
+  <div class="note" id="viewOnlyNote" data-ui hidden><b>View only: this PC can't be controlled</b><span id="viewOnlyText"></span><br /><button class="chip" id="viewOnlyOk" type="button">OK</button></div>
   <div class="keys-panel" id="keysPanel" data-ui hidden></div>
   <textarea class="kb-input" id="kbInput" aria-label="Type on the remote computer" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" data-ui></textarea>
   <div class="menu" id="moreMenu" data-ui hidden>
-    <button id="micBtn" type="button">🎤 Mic</button>
-    <button id="camBtn" type="button">📷 Camera</button>
-    <button id="handBtn" type="button">✋ Raise hand</button>
-    <button id="reactBtn" type="button">😀 React</button>
-    <button id="pointBtn" type="button">👆 Point</button>
-    <span class="sep"></span>
-    <button id="pipBtn" type="button">⧉ Picture-in-picture</button>
-    <button id="peopleBtn" type="button">👥 Hide people</button>
     <button id="statsBtn" type="button">📊 Stats</button>
     <span class="sep"></span>
     <span class="hint">Quality</span>
@@ -286,20 +232,11 @@
     <span class="hint" id="padHint" hidden>Controller</span>
     <button data-pad="game" type="button" hidden>🎮 Games (WASD + mouse)</button>
     <button data-pad="desktop" type="button" hidden>🖱 Desktop (stick = mouse)</button>
-    <span class="hint" id="keyHint">Keys: F full screen · M mic · V camera · H hand · P point · C chat · [ ] screens</span>
+    <span class="hint" id="keyHint"></span>
   </div>
-  <button class="banner" id="soundBanner" type="button" hidden>🔈 Tap to hear everyone</button>
-  <aside class="chat-panel" id="chatPanel" data-ui hidden>
-    <header>Chat<button id="chatCloseBtn" type="button" aria-label="Close chat">✕</button></header>
-    <ul class="chat" id="viewChat"></ul>
-    <form class="chat-form" id="viewChatForm" autocomplete="off"><input id="viewChatIn" maxlength="500" placeholder="Message everyone" /><button class="btn" type="submit">Send</button></form>
-  </aside>
-  <div data-ui class="chat-pop" id="chatPop" hidden></div>
   <div class="overlay" id="overlay" data-ui><div><div class="spinner"></div><p id="overlayText">Connecting…</p><button class="btn" id="cancelBtn" type="button">Cancel</button></div></div>
 </div>
 <div class="toast" id="toast" hidden></div>
-<div class="react-layer" id="reactLayer"></div>
-<div class="ping-layer" id="hostPingLayer"></div>
 
 <script>
 /*__CRYPTO__*/
@@ -435,27 +372,8 @@ function preferH264(sdp) {
 
 // ---------- sharing ----------
 
-const host = { peer: null, screens: [], active: 0, code: '', password: '', viewers: new Map(), failures: [], lockedUntil: 0, chat: [] };
+const host = { peer: null, screens: [], active: 0, code: '', password: '', viewers: new Map(), failures: [], lockedUntil: 0 };
 
-// ---------- shared chat helpers ----------
-
-function chatLine(msg) {
-  const li = document.createElement('li');
-  if (msg.system) {
-    li.className = 'sys';
-    li.textContent = msg.text;
-  } else {
-    const b = document.createElement('b');
-    b.textContent = msg.from;
-    li.append(b, document.createTextNode(msg.text));
-  }
-  return li;
-}
-function appendChat(list, msg) {
-  list.append(chatLine(msg));
-  while (list.children.length > 100) list.firstChild.remove();
-  list.scrollTop = list.scrollHeight;
-}
 function cleanText(t, max = 500) { return String(t ?? '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max); }
 
 function newCode() { return String(100000000 + Math.floor(Math.random() * 900000000)); }
@@ -481,11 +399,8 @@ async function startSharing() {
     return;
   }
   host.active = 0;
-  host.chat = [];
-  $('hostChat').replaceChildren();
   renderScreens();
   showPreview();
-  renderMeControls();
   host.code = store.get('code') || newCode();
   // The app keeps its password (for paired-device-free access from anywhere);
   // a browser tab makes a new one each time.
@@ -496,7 +411,7 @@ async function startSharing() {
   $('controlNote').innerHTML = hostControl() === 'desktop'
     ? '<b>Remote control is on.</b> Paired devices marked “Can control” can use this PC’s mouse and keyboard.'
     : native ? `Remote control is unavailable: ${cleanText(native.warning || 'permission missing', 200).replace(/</g, '&lt;')}`
-      : 'View only: a browser tab can’t be controlled. Install the Swipe Host app on this PC for remote control.';
+      : 'View only: a browser tab can’t be controlled. <a href="https://github.com/Hudsoonvid/Swipe/releases/latest" style="color:var(--accent)">Install Swipe Host</a> on this PC to use it from your devices.';
   $('shareIdle').hidden = true;
   $('shareOn').hidden = false;
   await createHostPeer();
@@ -612,34 +527,6 @@ function broadcast(msg) {
   for (const v of host.viewers.values()) if (v.authed && v.conn.open) v.conn.send(msg);
 }
 
-// ---------- chat (the host relays every message to everyone) ----------
-
-function postChat(msg) {
-  msg.ts = Date.now();
-  host.chat.push(msg);
-  host.chat = host.chat.slice(-30);
-  broadcast({ type: 'chat', ...msg });
-  appendChat($('hostChat'), msg);
-}
-
-function onViewerChat(v, text) {
-  text = cleanText(text);
-  if (!text) return;
-  const now = Date.now();
-  v.chatTimes = (v.chatTimes || []).filter((t) => now - t < 5000);
-  if (v.chatTimes.length >= 5) return; // slow down floods
-  v.chatTimes.push(now);
-  postChat({ from: v.name, text });
-}
-
-$('hostChatForm').onsubmit = (e) => {
-  e.preventDefault();
-  const text = cleanText($('hostChatIn').value);
-  if (!text) return;
-  postChat({ from: `${deviceName()} (sharing)`, text });
-  $('hostChatIn').value = '';
-};
-
 function uniqueName(name) {
   const taken = new Set([...host.viewers.values()].filter((v) => v.authed).map((v) => v.name));
   let n = name;
@@ -663,7 +550,6 @@ async function createHostPeer() {
     store.set('code', host.code);
     renderViewers();
     renderInvite();
-    broadcastRoster();
   });
   peer.on('error', (e) => {
     if (e.type === 'unavailable-id') {
@@ -682,18 +568,14 @@ async function createHostPeer() {
     }
   });
   peer.on('connection', (conn) => (conn.metadata?.kind === 'input' ? attachInputConn(conn) : onViewer(conn)));
-  peer.on('call', (call) => {
-    // Viewers may send their mic/camera; the screen itself only goes out.
-    if (call.metadata?.kind === 'cam' && host.viewers.get(call.peer)?.authed) return onCamCall(call);
-    call.close();
-  });
+  peer.on('call', (call) => call.close()); // the screen only goes out
 }
 
 function renderViewers() {
   const list = [...host.viewers.values()].filter((v) => v.authed);
   native?.setStatus?.({ status: host.peer ? 'online' : 'offline', viewers: list.length, code: host.code });
   if (!host.peer || host.peer.disconnected) setStatus('Reconnecting…', 'busy');
-  else if (list.length) setStatus(`${list.length} device${list.length > 1 ? 's' : ''} watching`, 'live');
+  else if (list.length) setStatus(`${list.length} device${list.length > 1 ? 's' : ''} connected`, 'live');
   else setStatus('Waiting for a device to connect', 'online');
   $('viewerList').replaceChildren(...list.map((v) => {
     const li = document.createElement('li');
@@ -711,7 +593,6 @@ function renderViewers() {
 function closeViewer(v, reason) {
   const wasHere = v.authed && host.viewers.get(v.conn.peer) === v;
   if (reason && v.conn.open) { try { v.conn.send({ type: reason }); } catch {} }
-  if (wasHere) postChat({ system: true, text: `${v.name} left` });
   v.authed = false;
   v.call?.close();
   v.inputConn?.close();
@@ -720,7 +601,7 @@ function closeViewer(v, reason) {
   setTimeout(() => v.conn.close(), reason ? 150 : 0);
   host.viewers.delete(v.conn.peer);
   renderViewers();
-  if (wasHere) broadcastRoster();
+  renderDevices();
 }
 
 // Five wrong passwords lock the code for an increasing time.
@@ -760,14 +641,10 @@ function onViewer(conn) {
   conn.on('close', () => {
     if (v.state === 'confirm') recordFailure(); // guessed, then left
     const wasHere = v.authed && host.viewers.get(conn.peer) === v;
-    if (wasHere) {
-      v.authed = false;
-      postChat({ system: true, text: `${v.name} left` });
-    }
+    v.authed = false;
     v.call?.close();
     host.viewers.delete(conn.peer);
     renderViewers();
-    if (wasHere) broadcastRoster();
     v.inputConn?.close();
     if (wasHere) native?.releaseInput?.();
     renderDevices();
@@ -822,12 +699,12 @@ async function onViewerData(v, d) {
     admit(v, d);
   } else if (v.authed && typeof d.t === 'string') {
     handleInput(v, d);
-  } else if (v.authed && d.type === 'chat') {
-    onViewerChat(v, d.text);
   } else if (v.authed && d.type === 'screen' && Number.isInteger(d.index)) {
     switchScreen(d.index, true);
-  } else if (v.authed && ['state', 'react', 'ping', 'quality'].includes(d.type)) {
-    onMeetFromHost(v, d);
+  } else if (v.authed && d.type === 'quality' && QUALITY[d.level]) {
+    v.quality = d.level;
+    const pc = v.call?.peerConnection;
+    if (pc) tuneSenders(pc, d.level);
   }
 }
 
@@ -849,11 +726,8 @@ function admit(v, d) {
   v.authed = true;
   renderViewers();
   renderDevices();
-  v.conn.send({ type: 'welcome', name: hostLabel(), platform: hostPlatform(), control: viewerControl(v) });
-  v.conn.send({ type: 'chatHistory', list: host.chat });
+  v.conn.send({ type: 'welcome', name: hostLabel(), platform: hostPlatform(), control: viewerControl(v), why: whyNoControl(v) });
   v.conn.send(screensMsg());
-  postChat({ system: true, text: `${v.name} joined` });
-  broadcastRoster();
   // Media goes over its own connection, which must use the same viewer
   // certificate the password check (or pairing) was bound to.
   const call = host.peer.call(v.conn.peer, activeStream(), { sdpTransform: preferH264 });
@@ -874,6 +748,7 @@ function admit(v, d) {
 const INPUT_TYPES = new Set(['pm', 'pd', 'pu', 'wh', 'kd', 'ku', 'tx', 'mm']);
 function hostControl() { return native?.canControl ? 'desktop' : 'none'; }
 function viewerControl(v) { return v.control && hostControl() === 'desktop' ? 'desktop' : 'none'; }
+function whyNoControl(v) { return !native ? 'none-browser' : hostControl() !== 'desktop' ? 'none-permission' : !v.control ? 'none-denied' : ''; }
 function hostPlatform() {
   if (native?.platform) return { win32: 'windows', darwin: 'mac', linux: 'linux' }[native.platform] || native.platform;
   return /Mac/.test(navigator.userAgent) ? 'mac' : /Windows/.test(navigator.userAgent) ? 'windows' : 'linux';
@@ -991,9 +866,8 @@ function stopSharing() {
   const peer = host.peer;
   host.peer = null;
   setTimeout(() => peer?.destroy(), 200);
-  stopMedia();
   $('hostPreview').srcObject = null;
-  for (const s of host.screens) s.stream.getTracks().forEach((t) => t.stop());
+  for (const s of host.screens) s.stream?.getTracks().forEach((t) => t.stop());
   host.screens = [];
   $('shareIdle').hidden = false;
   $('shareOn').hidden = true;
@@ -1006,7 +880,7 @@ $('newPwBtn').onclick = () => {
   if (native) store.set('hostpw', host.password);
   $('myPw').textContent = formatPassword(host.password);
   renderInvite();
-  toast('New password set. Devices already watching stay connected.');
+  toast('New password set. Devices already connected (and paired devices) keep working.');
 };
 function showPreview() {
   const v = $('hostPreview');
@@ -1041,370 +915,9 @@ $('copyBtn').onclick = async () => {
   try { await navigator.clipboard.writeText(formatCode(host.code)); toast('Copied'); } catch { toast(formatCode(host.code)); }
 };
 
-// ---------- meeting: cameras, mics, people, reactions, pointer ----------
-//
-// Everyone in a session (host and viewers) can turn on a mic and camera.
-// The host keeps the roster (who is here, with each person's verified
-// certificate fingerprint) and sends it to everyone. Each person who has
-// a mic or camera on calls every other roster member with it; a call is
-// accepted only from a roster member, over that member's verified
-// certificate, so the PeerJS service can't slip anyone in.
-
-const REACTIONS = ['👍', '❤️', '😂', '🎉', '👏', '😮', '🔥', '🙌'];
-const meet = { media: null, mic: false, cam: false, hand: false, roster: [], out: new Map(), inc: new Map(), levels: new Map(), audioCtx: null, people: true };
-
-function myFingerprint() {
-  const fps = myCert?.getFingerprints?.() || [];
-  const f = fps.find((x) => x.algorithm === 'sha-256') || fps[0];
-  return f ? `${f.algorithm} ${f.value}`.toLowerCase() : '';
-}
-function meetPeer() { return host.peer || view.peer; }
-function myId() { return meetPeer()?.id; }
-function colorFor(name) {
-  let h = 0;
-  for (const ch of String(name)) h = (h * 31 + ch.codePointAt(0)) % 360;
-  return `hsl(${h} 75% 62%)`;
-}
-function meName() { return host.peer ? `${deviceName()} (sharing)` : (cleanText($('nameIn').value, 30) || deviceName()); }
-
-// Send a meeting message: viewers send to the host, the host handles it itself.
-function meetSend(msg) {
-  if (host.peer) return onMeetFromHost(null, msg);
-  if (view.conn?.open && view.authed) view.conn.send(msg);
-}
-
-// ----- roster (host side) -----
-function hostRoster() {
-  const list = [{ id: host.peer?.id, name: native ? hostLabel() : `${deviceName()} (sharing)`, fp: myFingerprint(), host: true, mic: meet.mic, cam: meet.cam, hand: meet.hand }];
-  for (const v of host.viewers.values()) {
-    if (v.authed) list.push({ id: v.conn.peer, name: v.name, fp: v.fp, mic: !!v.mic, cam: !!v.cam, hand: !!v.hand });
-  }
-  return list;
-}
-function broadcastRoster() {
-  if (!host.peer) return;
-  const list = hostRoster();
-  broadcast({ type: 'roster', list });
-  applyRoster(list);
-}
-
-// Messages from a viewer (v) or from the host itself (v = null).
-function onMeetFromHost(v, d) {
-  const who = v ? v.name : `${deviceName()} (sharing)`;
-  if (d.type === 'state') {
-    if (v) {
-      const raised = !v.hand && d.hand;
-      v.mic = !!d.mic; v.cam = !!d.cam; v.hand = !!d.hand;
-      if (raised) { postChat({ system: true, text: `✋ ${v.name} raised a hand` }); toast(`✋ ${v.name} raised a hand`); }
-    }
-    broadcastRoster();
-  } else if (d.type === 'react' && REACTIONS.includes(d.emoji)) {
-    if (v) {
-      const now = Date.now();
-      v.reactTimes = (v.reactTimes || []).filter((t) => now - t < 3000);
-      if (v.reactTimes.length >= 6) return;
-      v.reactTimes.push(now);
-    }
-    const m = { type: 'react', from: who, emoji: d.emoji };
-    broadcast(m);
-    showReaction(m);
-  } else if (d.type === 'ping' && Number.isFinite(d.x) && Number.isFinite(d.y)) {
-    const m = { type: 'ping', from: who, x: Math.min(1, Math.max(0, d.x)), y: Math.min(1, Math.max(0, d.y)) };
-    broadcast(m);
-    showPing(m);
-  } else if (v && d.type === 'quality' && ['auto', 'saver', 'sharp'].includes(d.level)) {
-    v.quality = d.level;
-    const pc = v.call?.peerConnection;
-    if (pc) tuneSenders(pc, d.level);
-  }
-}
-
-// ----- roster (everyone) -----
-function applyRoster(list) {
-  meet.roster = (Array.isArray(list) ? list : []).slice(0, 20).map((m) => ({
-    id: String(m.id || ''), name: cleanText(m.name, 60) || 'Someone', fp: String(m.fp || '').toLowerCase(),
-    host: !!m.host, mic: !!m.mic, cam: !!m.cam, hand: !!m.hand,
-  }));
-  const ids = new Set(meet.roster.map((m) => m.id));
-  for (const [id, c] of meet.out) if (!ids.has(id)) { c.close(); meet.out.delete(id); }
-  for (const [id, c] of meet.inc) if (!ids.has(id)) { c.call.close(); meet.inc.delete(id); }
-  syncCalls();
-  renderPeople();
-}
-
-// Call every roster member with our mic/camera (if any is on).
-function syncCalls() {
-  const peer = meetPeer();
-  if (!peer || !meet.media || !meet.media.getTracks().length) return;
-  for (const m of meet.roster) {
-    if (!m.id || m.id === peer.id || meet.out.has(m.id)) continue;
-    const call = peer.call(m.id, meet.media, { metadata: { kind: 'cam' } });
-    if (!call) continue;
-    meet.out.set(m.id, call);
-    const pc = call.peerConnection;
-    pc?.addEventListener('signalingstatechange', () => {
-      if (pc.signalingState === 'stable' && pc.remoteDescription && fingerprint(pc.remoteDescription) !== m.fp) call.close();
-    });
-    call.on('close', () => { if (meet.out.get(m.id) === call) meet.out.delete(m.id); });
-    call.on('error', () => {});
-  }
-}
-function recall() {
-  for (const c of meet.out.values()) c.close();
-  meet.out.clear();
-  syncCalls();
-}
-
-// Someone's mic/camera arriving.
-function onCamCall(call) {
-  const m = meet.roster.find((x) => x.id === call.peer);
-  if (!m || call.peer === myId()) return call.close();
-  call.answer();
-  call.on('stream', (stream) => {
-    if (fingerprint(call.peerConnection?.remoteDescription) !== m.fp) return call.close();
-    const old = meet.inc.get(m.id);
-    if (old && old.call !== call) old.call.close();
-    meet.inc.set(m.id, { call, stream });
-    watchLevel(m.id, stream);
-    renderPeople();
-  });
-  call.on('close', () => {
-    if (meet.inc.get(m.id)?.call === call) { meet.inc.delete(m.id); meet.levels.delete(m.id); renderPeople(); }
-  });
-  call.on('error', () => {});
-}
-
-// ----- my mic & camera -----
-// Changes run one at a time, so quick taps on Mic and Camera can't undo
-// each other; whatever isn't being changed keeps its current state.
-let mediaQueue = Promise.resolve();
-function setMedia(change) {
-  mediaQueue = mediaQueue.then(() => applyMedia({ mic: change.mic ?? meet.mic, cam: change.cam ?? meet.cam })).catch(() => {});
-  return mediaQueue;
-}
-async function applyMedia({ mic, cam }) {
-  const tracks = meet.media ? meet.media.getTracks() : [];
-  let audio = tracks.find((t) => t.kind === 'audio');
-  let video = tracks.find((t) => t.kind === 'video');
-  let changed = false;
-  try {
-    if (mic && !audio) {
-      const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-      audio = s.getAudioTracks()[0];
-      changed = true;
-    }
-    if (cam && !video) {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 }, facingMode: 'user' } });
-      video = s.getVideoTracks()[0];
-      changed = true;
-    }
-  } catch (e) {
-    toast(e.name === 'NotAllowedError' ? 'Allow microphone/camera access in your browser to use this.' : `Could not start ${mic && !audio ? 'microphone' : 'camera'}: ${e.message}`, 5000);
-    return;
-  }
-  if (!cam && video) { video.stop(); video = null; changed = true; }
-  if (audio) audio.enabled = mic;
-  meet.mic = !!(mic && audio);
-  meet.cam = !!(cam && video);
-  meet.media = audio || video ? new MediaStream([audio, video].filter(Boolean)) : null;
-  if (audio && changed) watchLevel('me', new MediaStream([audio]));
-  if (changed) recall();
-  renderMeControls();
-  meetSend({ type: 'state', mic: meet.mic, cam: meet.cam, hand: meet.hand });
-  renderPeople();
-  ensureAudio();
-}
-function stopMedia() {
-  meet.media?.getTracks().forEach((t) => t.stop());
-  meet.media = null;
-  meet.mic = meet.cam = meet.hand = false;
-  for (const c of meet.out.values()) c.close();
-  for (const c of meet.inc.values()) c.call.close();
-  meet.out.clear();
-  meet.inc.clear();
-  meet.levels.clear();
-  meet.roster = [];
-  renderMeControls();
-  renderPeople();
-}
-function toggleHand() {
-  meet.hand = !meet.hand;
-  renderMeControls();
-  meetSend({ type: 'state', mic: meet.mic, cam: meet.cam, hand: meet.hand });
-}
-function renderMeControls() {
-  const set = (id, on, label) => { const b = $(id); if (!b) return; b.classList.toggle('on', on); b.classList.toggle('off', !on); if (label) b.textContent = label; };
-  set('hostMicBtn', meet.mic, meet.mic ? '🎤 Mic on' : '🎤 Mic off');
-  set('hostCamBtn', meet.cam, meet.cam ? '📷 Camera on' : '📷 Camera off');
-  $('micBtn').classList.toggle('on', meet.mic);
-  $('micBtn').title = meet.mic ? 'Mute (M)' : 'Unmute (M)';
-  $('camBtn').classList.toggle('on', meet.cam);
-  $('handBtn').classList.toggle('on', meet.hand);
-}
-
-// ----- speaking indicators -----
-function ensureAudio() {
-  if (!meet.audioCtx && (window.AudioContext || window.webkitAudioContext)) {
-    try { meet.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
-  }
-  meet.audioCtx?.resume?.().catch(() => {});
-}
-function watchLevel(id, stream) {
-  const track = stream.getAudioTracks()[0];
-  ensureAudio();
-  if (!track || !meet.audioCtx) return;
-  try {
-    const src = meet.audioCtx.createMediaStreamSource(new MediaStream([track]));
-    const an = meet.audioCtx.createAnalyser();
-    an.fftSize = 512;
-    src.connect(an);
-    meet.levels.set(id, { an, buf: new Uint8Array(an.fftSize) });
-  } catch {}
-}
-setInterval(() => {
-  for (const [id, l] of meet.levels) {
-    l.an.getByteTimeDomainData(l.buf);
-    let sum = 0;
-    for (const v of l.buf) sum += (v - 128) * (v - 128);
-    const speaking = Math.sqrt(sum / l.buf.length) > 6 && (id !== 'me' || meet.mic);
-    document.querySelectorAll(`.tile[data-id="${CSS.escape(id)}"]`).forEach((t) => t.classList.toggle('speaking', speaking));
-  }
-}, 200);
-
-// ----- tiles -----
-function tileFor(m, stream, isMe) {
-  const el = document.createElement('div');
-  el.className = 'tile' + (isMe ? ' me' : '');
-  el.dataset.id = isMe ? 'me' : m.id;
-  const hasVideo = stream?.getVideoTracks().some((t) => t.readyState === 'live');
-  if (stream && (hasVideo || !isMe)) {
-    const v = document.createElement('video');
-    v.autoplay = true;
-    v.playsInline = true;
-    v.muted = isMe; // never play yourself back
-    v.srcObject = stream;
-    v.play().catch(() => { if (!isMe) $('soundBanner').hidden = false; });
-    if (!hasVideo) v.style.opacity = '0';
-    el.append(v);
-  }
-  if (!hasVideo) {
-    const a = document.createElement('div');
-    a.className = 'avatar';
-    const c = document.createElement('span');
-    c.style.background = colorFor(m.name);
-    c.textContent = (m.name.trim()[0] || '?').toUpperCase();
-    a.append(c);
-    el.append(a);
-  }
-  const n = document.createElement('div');
-  n.className = 'name';
-  const flags = `${m.hand ? '✋' : ''}${m.mic ? '' : '🔇'}`;
-  n.textContent = `${flags ? flags + ' ' : ''}${isMe ? 'You' : m.name}`;
-  el.append(n);
-  return el;
-}
-function renderPeople() {
-  const me = myId();
-  const others = meet.roster.filter((m) => m.id && m.id !== me);
-  const self = meet.roster.find((m) => m.id === me) || { name: meName(), mic: meet.mic, cam: meet.cam, hand: meet.hand };
-  const build = () => [
-    tileFor({ ...self, mic: meet.mic, hand: meet.hand }, meet.cam ? meet.media : null, true),
-    ...others.map((m) => tileFor(m, meet.inc.get(m.id)?.stream, false)),
-  ];
-  if (host.peer) $('hostPeople').replaceChildren(...build());
-  if (view.peer) {
-    const box = $('tiles');
-    box.hidden = !meet.people || others.length === 0;
-    box.replaceChildren(...build());
-  }
-}
-$('soundBanner').onclick = () => {
-  document.querySelectorAll('.tile video').forEach((v) => { if (!v.muted) v.play().catch(() => {}); });
-  $('video').play().catch(() => {});
-  ensureAudio();
-  $('soundBanner').hidden = true;
-};
-
-// ----- reactions -----
-function showReaction(m) {
-  const el = document.createElement('div');
-  el.className = 'react';
-  el.style.left = `${10 + Math.random() * 75}%`;
-  el.textContent = m.emoji;
-  const s = document.createElement('small');
-  s.textContent = m.from;
-  el.append(s);
-  $('reactLayer').append(el);
-  setTimeout(() => el.remove(), 3300);
-}
-function buildReactMenu(menu, after) {
-  menu.replaceChildren(...REACTIONS.map((e) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'emoji';
-    b.textContent = e;
-    b.onclick = () => { meetSend({ type: 'react', emoji: e }); after?.(); };
-    return b;
-  }));
-}
-
-// ----- pointer pings -----
-// Where the picture actually is inside a <video> with object-fit: contain.
-function videoRect(video) {
-  const r = video.getBoundingClientRect();
-  const vw = video.videoWidth, vh = video.videoHeight;
-  if (!vw || !vh) return r;
-  const s = Math.min(r.width / vw, r.height / vh);
-  const w = vw * s, h = vh * s;
-  return { left: r.left + (r.width - w) / 2, top: r.top + (r.height - h) / 2, width: w, height: h };
-}
-function showPing(m) {
-  const video = host.peer && !view.peer ? $('hostPreview') : $('video');
-  const layer = host.peer && !view.peer ? $('hostPingLayer') : $('pingLayer');
-  const r = videoRect(video);
-  if (!r.width) return;
-  const el = document.createElement('div');
-  el.className = 'ping';
-  el.style.setProperty('--c', colorFor(m.from));
-  el.style.left = `${r.left + m.x * r.width}px`;
-  el.style.top = `${r.top + m.y * r.height}px`;
-  const b = document.createElement('b');
-  b.textContent = m.from;
-  el.append(b);
-  layer.append(el);
-  setTimeout(() => el.remove(), 3400);
-}
-function pingAt(video, e) {
-  const r = videoRect(video);
-  const x = (e.clientX - r.left) / r.width;
-  const y = (e.clientY - r.top) / r.height;
-  if (x < 0 || x > 1 || y < 0 || y > 1) return;
-  meetSend({ type: 'ping', x, y });
-}
-
-// ----- host-side controls -----
-$('hostMicBtn').onclick = () => setMedia({ mic: !meet.mic });
-$('hostCamBtn').onclick = () => setMedia({ cam: !meet.cam });
-$('hostReactBtn').onclick = (e) => {
-  let menu = $('hostReactMenu');
-  if (!menu) {
-    menu = document.createElement('div');
-    menu.id = 'hostReactMenu';
-    menu.className = 'menu';
-    menu.style.position = 'fixed';
-    menu.hidden = true;
-    buildReactMenu(menu, () => (menu.hidden = true));
-    document.body.append(menu);
-  }
-  const r = e.currentTarget.getBoundingClientRect();
-  menu.style.top = `${Math.max(8, r.top - 70)}px`;
-  menu.hidden = !menu.hidden;
-};
-$('previewWrap').onclick = (e) => pingAt($('hostPreview'), e);
-
 // ---------- viewing ----------
 
-const view = { peer: null, conn: null, call: null, statsTimer: null, prev: {}, screens: null, unread: 0, authed: false,
+const view = { peer: null, conn: null, call: null, statsTimer: null, prev: {}, screens: null, authed: false,
   control: 'none', hostPlatform: '', input: null, inputConn: null,
   quality: store.get('quality') || 'auto', join: null, retries: 0, retryTimer: null, noRetry: false, wasLive: false };
 
@@ -1436,43 +949,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === '[' || e.key === 'PageUp') stepScreen(-1);
 });
 
-// ---------- viewer: chat ----------
-
-let popTimer;
-function onViewChat(msg, live = true) {
-  appendChat($('viewChat'), msg);
-  if (!live || !$('chatPanel').hidden || msg.system) return;
-  view.unread++;
-  $('chatBadge').textContent = String(view.unread);
-  $('chatBadge').hidden = false;
-  const pop = $('chatPop');
-  pop.replaceChildren(...chatLine(msg).childNodes);
-  pop.hidden = false;
-  clearTimeout(popTimer);
-  popTimer = setTimeout(() => (pop.hidden = true), 4500);
-}
-function toggleChat(open = $('chatPanel').hidden) {
-  $('chatPanel').hidden = !open;
-  if (open) {
-    view.unread = 0;
-    $('chatBadge').hidden = true;
-    $('chatPop').hidden = true;
-    const list = $('viewChat');
-    list.scrollTop = list.scrollHeight;
-    if (!matchMedia('(pointer: coarse)').matches) $('viewChatIn').focus();
-  }
-}
-$('chatBtn').onclick = () => toggleChat();
-$('chatCloseBtn').onclick = () => toggleChat(false);
-$('chatPop').onclick = () => toggleChat(true);
-$('viewChatForm').onsubmit = (e) => {
-  e.preventDefault();
-  const text = cleanText($('viewChatIn').value);
-  if (!text || !view.conn?.open || !view.authed) return;
-  view.conn.send({ type: 'chat', text }); // the host sends it back to everyone, us included
-  $('viewChatIn').value = '';
-};
-
 $('codeIn').addEventListener('input', (e) => {
   const d = normalizeCode(e.target.value).slice(0, 9);
   const f = formatCode(d);
@@ -1486,10 +962,10 @@ $('endBtn').onclick = () => leave();
 function overlay(text) { $('overlay').hidden = !text; if (text) $('overlayText').textContent = text; }
 
 const ERRORS = {
-  'peer-unavailable': 'No device is sharing with that code right now. Check the code, and that the other device is still sharing.',
+  'peer-unavailable': "That PC isn't online right now. Check the code, and that Swipe Host is running on the PC.",
   auth_failed: 'Wrong password.',
   locked: 'Too many wrong passwords. Try again later.',
-  full: 'That device already has the maximum number of viewers.',
+  full: 'That PC already has the maximum number of devices connected.',
   denied: 'The PC declined this device.',
 };
 
@@ -1520,7 +996,6 @@ async function connect(codeRaw, password, { retry = false } = {}) {
     view.wasLive = false;
   }
   view.join = { code, password };
-  ensureAudio();
   $('home').hidden = true;
   $('session').hidden = false;
   if (!view.input) createInput();
@@ -1592,8 +1067,7 @@ async function connect(codeRaw, password, { retry = false } = {}) {
         updateControlUI();
         if (view.control === 'desktop') openInputChannel(peer, conn.peer);
         if (!retry) overlay('Starting video…');
-        // After a reconnect, tell everyone our mic/camera is still on.
-        if (meet.mic || meet.cam || meet.hand) meetSend({ type: 'state', mic: meet.mic, cam: meet.cam, hand: meet.hand });
+        if (view.control !== 'desktop' && !retry) showViewOnlyNote(String(d.why || 'none-browser'));
         return;
       }
       if (authed && d?.type === 'control') {
@@ -1601,19 +1075,11 @@ async function connect(codeRaw, password, { retry = false } = {}) {
         view.control = d.control === 'desktop' ? 'desktop' : 'none';
         if (view.control === 'desktop' && !view.inputConn) openInputChannel(peer, conn.peer);
         updateControlUI();
-        if (was !== view.control) toast(view.control === 'desktop' ? 'You can now control this PC' : 'The PC switched you to view only');
+        if (was !== view.control) toast(view.control === 'desktop' ? 'You can now control this PC' : 'The PC set this device to view only');
         return;
       }
-      if (d?.type === 'kicked') { view.noRetry = true; return fail('The person sharing disconnected you.'); }
-      if (d?.type === 'ended') { view.noRetry = true; return fail('The other device stopped sharing.'); }
-      if (authed && d?.type === 'roster') return applyRoster(d.list);
-      if (authed && d?.type === 'react' && REACTIONS.includes(d.emoji)) return showReaction({ from: cleanText(d.from, 60), emoji: d.emoji });
-      if (authed && d?.type === 'ping') return showPing({ from: cleanText(d.from, 60), x: Number(d.x) || 0, y: Number(d.y) || 0 });
-      if (authed && d?.type === 'chat') return onViewChat({ from: cleanText(d.from, 60), text: cleanText(d.text), system: !!d.system });
-      if (authed && d?.type === 'chatHistory' && Array.isArray(d.list)) {
-        for (const m of d.list.slice(-30)) onViewChat({ from: cleanText(m.from, 60), text: cleanText(m.text), system: !!m.system }, false);
-        return;
-      }
+      if (d?.type === 'kicked') { view.noRetry = true; return fail('The PC disconnected you.'); }
+      if (d?.type === 'ended') { view.noRetry = true; return fail('Swipe Host on the PC stopped.'); }
       if (authed && d?.type === 'screens' && Array.isArray(d.list)) {
         view.screens = { list: d.list.map((l) => cleanText(l, 40)), active: Number(d.active) || 0 };
         return renderViewScreens();
@@ -1632,7 +1098,6 @@ async function connect(codeRaw, password, { retry = false } = {}) {
       else fail(authed ? 'The other device stopped sharing.' : 'The connection was closed.');
     });
     peer.on('call', (call) => {
-      if (call.metadata?.kind === 'cam') return authed ? onCamCall(call) : call.close();
       // Only accept media from the PC we just verified, over a connection
       // using its verified certificate (checked when the stream arrives).
       if (!hostVerified || call.peer !== conn.peer) return call.close();
@@ -1673,8 +1138,7 @@ function deviceName() {
   return 'Computer';
 }
 
-// Drop the connection but keep the session screen, chat and our mic/camera
-// (used before reconnecting).
+// Drop the connection but keep the session screen (used before reconnecting).
 function teardown() {
   view.authed = false;
   view.control = 'none';
@@ -1685,12 +1149,6 @@ function teardown() {
   updateControlUI();
   const { peer } = view;
   view.peer = view.conn = view.call = null;
-  for (const c of meet.out.values()) c.close();
-  for (const c of meet.inc.values()) c.call.close();
-  meet.out.clear();
-  meet.inc.clear();
-  meet.roster = [];
-  renderPeople();
   peer?.destroy();
 }
 
@@ -1699,16 +1157,10 @@ function leave() {
   view.join = null;
   view.wasLive = false;
   teardown();
-  stopMedia();
   view.screens = null;
-  view.unread = 0;
   renderViewScreens();
-  $('viewChat').replaceChildren();
-  $('chatBadge').hidden = true;
-  $('chatPop').hidden = true;
-  $('chatPanel').hidden = true;
-  for (const id of ['reactMenu', 'moreMenu', 'soundBanner']) $(id).hidden = true;
-  setPointing(false);
+  $('moreMenu').hidden = true;
+  $('viewOnlyNote').hidden = true;
   stopStats();
   view.input?.destroy();
   view.input = null;
@@ -1823,8 +1275,8 @@ function updateControlUI() {
     b.classList.toggle('on', b.dataset.pad === pad.profile);
   });
   $('keyHint').textContent = ctl
-    ? 'Your typing goes to the PC. Use the toolbar for Swipe features.'
-    : 'Keys: F full screen · M mic · V camera · H hand · P point · C chat · [ ] screens';
+    ? 'Your mouse, keyboard and controller go to the PC. Full screen sends Esc and Alt+Tab too.'
+    : 'Keys: F full screen · [ ] switch screens';
   if (!ctl) $('keysPanel').hidden = true;
 }
 $('kbBtn').onclick = () => {
@@ -2000,36 +1452,9 @@ function renderPcs() {
 }
 renderPcs();
 
-// ---------- viewer: meeting controls ----------
+// ---------- viewer: menu ----------
 
-$('micBtn').onclick = () => setMedia({ mic: !meet.mic });
-$('camBtn').onclick = () => setMedia({ cam: !meet.cam });
-$('handBtn').onclick = toggleHand;
-$('reactBtn').onclick = () => {
-  const menu = $('reactMenu');
-  buildReactMenu(menu, () => (menu.hidden = true));
-  $('moreMenu').hidden = true;
-  menu.hidden = !menu.hidden;
-};
-function setPointing(on) {
-  $('pingLayer').classList.toggle('active', on);
-  $('pointBtn').classList.toggle('on', on);
-}
-$('pointBtn').onclick = () => {
-  const on = !$('pingLayer').classList.contains('active');
-  setPointing(on);
-  if (on) toast('Tap anywhere on the screen to point it out to everyone');
-};
-$('pingLayer').addEventListener('click', (e) => pingAt($('video'), e));
-$('moreBtn').onclick = () => {
-  $('reactMenu').hidden = true;
-  $('moreMenu').hidden = !$('moreMenu').hidden;
-};
-$('peopleBtn').onclick = () => {
-  meet.people = !meet.people;
-  $('peopleBtn').textContent = meet.people ? '👥 Hide people' : '👥 Show people';
-  renderPeople();
-};
+$('moreBtn').onclick = () => { $('moreMenu').hidden = !$('moreMenu').hidden; };
 function renderQuality() {
   document.querySelectorAll('#moreMenu [data-q]').forEach((b) => b.classList.toggle('on', b.dataset.q === view.quality));
 }
@@ -2038,23 +1463,11 @@ document.querySelectorAll('#moreMenu [data-q]').forEach((b) => {
     view.quality = b.dataset.q;
     store.set('quality', view.quality);
     renderQuality();
-    meetSend({ type: 'quality', level: view.quality });
+    if (view.conn?.open && view.authed) view.conn.send({ type: 'quality', level: view.quality });
     toast(view.quality === 'saver' ? 'Data saver: lower resolution, less data' : view.quality === 'sharp' ? 'Sharpest: best for reading small text' : 'Auto quality');
   };
 });
 renderQuality();
-$('pipBtn').onclick = async () => {
-  const v = $('video');
-  try {
-    if (document.pictureInPictureElement) await document.exitPictureInPicture();
-    else if (v.requestPictureInPicture && document.pictureInPictureEnabled) await v.requestPictureInPicture();
-    else if (v.webkitSupportsPresentationMode?.('picture-in-picture')) v.webkitSetPresentationMode(v.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture');
-    else toast('Picture-in-picture is not supported in this browser');
-  } catch (e) {
-    toast('Picture-in-picture is not available: ' + e.message);
-  }
-};
-
 // Keyboard (and TV remote) shortcuts while watching.
 document.addEventListener('keydown', (e) => {
   if ($('session').hidden || e.target.closest?.('input, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -2063,16 +1476,7 @@ document.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   wakeControls();
   if (k === 'f') $('fullBtn').click();
-  else if (k === 'm') $('micBtn').click();
-  else if (k === 'v') $('camBtn').click();
-  else if (k === 'h') $('handBtn').click();
-  else if (k === 'p') $('pointBtn').click();
-  else if (k === 'c') toggleChat();
-  else if (k === 'escape') {
-    for (const id of ['reactMenu', 'moreMenu']) $(id).hidden = true;
-    toggleChat(false);
-    setPointing(false);
-  }
+  else if (k === 'escape') $('moreMenu').hidden = true;
 });
 
 // Controls fade away after a few seconds, like a video player.
@@ -2081,7 +1485,7 @@ function wakeControls() {
   $('session').classList.remove('idle');
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
-    const busy = !$('overlay').hidden || !$('chatPanel').hidden || !$('reactMenu').hidden || !$('moreMenu').hidden || document.activeElement?.closest?.('.bar');
+    const busy = !$('overlay').hidden || !$('moreMenu').hidden || document.activeElement?.closest?.('.bar');
     if (!busy && !$('session').hidden) $('session').classList.add('idle');
   }, 4000);
 }
@@ -2100,20 +1504,72 @@ for (const ev of ['pointermove', 'pointerdown', 'touchstart']) $('session').addE
   else $('pwIn').focus();
 })();
 
-if (!navigator.mediaDevices?.getDisplayMedia || /Android|iPhone|iPad/.test(navigator.userAgent)) {
-  $('shareHint').textContent = "This browser can't share its screen (phones and tablets can't in a browser). Use the Swipe app to share, or connect to another device here.";
-  $('shareBtn').disabled = true;
+// ---------- home: setting up this PC ----------
+
+const RELEASES = 'https://github.com/Hudsoonvid/Swipe/releases/latest';
+const DOWNLOADS = {
+  windows: { label: 'Download Swipe Host for Windows', file: 'Swipe-Host-Setup.exe' },
+  mac: { label: 'Download Swipe Host for Mac', file: 'Swipe-Host-mac.dmg' },
+  linux: { label: 'Download Swipe Host for Linux', file: 'Swipe-Host-linux.AppImage' },
+};
+const mobile = /Android|iPhone|iPad/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+function renderGetHost() {
+  const os = /Windows/.test(navigator.userAgent) ? 'windows' : /Mac/.test(navigator.userAgent) ? 'mac' : /Linux|X11|CrOS/.test(navigator.userAgent) ? 'linux' : '';
+  const main = DOWNLOADS[os];
+  $('dlMain').textContent = main ? main.label : 'Download Swipe Host';
+  $('dlMain').href = main ? `${RELEASES}/download/${main.file}` : RELEASES;
+  const others = Object.entries(DOWNLOADS).filter(([k]) => k !== os);
+  $('dlOthers').replaceChildren(document.createTextNode('Also for '), ...others.flatMap(([k, d], i) => {
+    const a = document.createElement('a');
+    a.href = `${RELEASES}/download/${d.file}`;
+    a.textContent = { windows: 'Windows', mac: 'Mac', linux: 'Linux' }[k];
+    a.style.color = 'var(--accent)';
+    return i ? [document.createTextNode(' · '), a] : [a];
+  }));
+  $('dlNote').textContent = os === 'windows'
+    ? 'Windows may say it protected your PC (the app isn’t code-signed yet): click More info → Run anyway.'
+    : os === 'mac'
+      ? 'First time: right-click the app → Open. Then allow Swipe Host under System Settings → Privacy & Security → Screen Recording and Accessibility.'
+      : os === 'linux' ? 'Make the file executable, then run it. Control needs an X11 (Xorg) session.' : '';
 }
+renderGetHost();
+if (mobile) {
+  // Phones and tablets use a PC; they don't host one.
+  $('shareTitle').textContent = 'Want to use a PC from here?';
+  $('getHost').querySelector('p').textContent = 'Install Swipe Host on the PC (open this page on the PC to download it). Then enter the code and password it shows.';
+  $('getHost').querySelector('.get-host').hidden = true;
+  $('dlNote').hidden = true;
+  $('viewOnlyBtn').hidden = true;
+} else if (!navigator.mediaDevices?.getDisplayMedia) {
+  $('viewOnlyBtn').hidden = true;
+}
+$('viewOnlyBtn').onclick = startSharing;
 if (native) {
   // The Swipe Host app shares as soon as it starts, so paired devices can
   // reach this PC any time (it keeps running in the tray).
-  $('shareHint').textContent = 'This PC is ready for your devices.';
-  $('shareBtn').disabled = false;
+  $('shareTitle').textContent = 'This PC';
+  $('getHost').hidden = true;
+  $('shareHint').hidden = false;
+  $('shareHint').textContent = 'Swipe Host is stopped. Start it so your devices can use this PC.';
+  $('shareBtn').hidden = false;
+  $('shareBtn').textContent = 'Start';
+  $('stopBtn').textContent = 'Stop (devices can’t connect until you start again)';
   native.onCommand?.((cmd) => (cmd === 'start-sharing' ? startSharing() : cmd === 'stop-sharing' ? stopSharing() : null));
   startSharing();
 }
+
+// Viewers learn why they can't control a PC (and what fixes it).
+function showViewOnlyNote(control) {
+  $('viewOnlyText').textContent = control === 'none-browser'
+    ? 'It is shared from a web browser, which can’t move the mouse or type. Install Swipe Host on the PC (open this page there and download it), then connect to the code it shows.'
+    : control === 'none-denied'
+      ? 'The PC set this device to view only. Change it under “Paired devices” on the PC.'
+      : 'Swipe Host on the PC is missing permission to control it. On a Mac: System Settings → Privacy & Security → Accessibility → turn on Swipe Host, then restart it. On Linux, log in with an X11 (Xorg) session.';
+  $('viewOnlyNote').hidden = false;
+}
+$('viewOnlyOk').onclick = () => ($('viewOnlyNote').hidden = true);
 // Exposed for automated tests.
-window.__swipe = { host, view, meet, connect, startSharing };
+window.__swipe = { host, view, connect, startSharing };
 </script>
 </body>
 </html>

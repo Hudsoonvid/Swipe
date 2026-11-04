@@ -1,52 +1,33 @@
 # Swipe
 
-Share your screen from any device to any other device: phone to iPad, iPad to PC, PC to phone. It works from anywhere using just a **code and a password**. Connected devices can also **control** the shared one (mouse, keyboard, touch), with low delay.
+Use your PC from any of your other devices: phone, iPad, laptop or TV, from anywhere, like Steam Link. You get the PC's screen with low delay and control it with touch, mouse, keyboard or a game controller. Connecting takes a **code and a password** the first time; after that, your devices are paired.
 
 <p align="center"><img src="web/icons/icon-192.png" width="96" alt=""></p>
 
-## Fastest way to try it: one HTML file
+## Set it up
 
-[`swipe.html`](swipe.html) is the whole thing in a single file, with no server to set up.
+1. **On the PC:** open https://hudsoonvid.github.io/Swipe/ and click **Download Swipe Host**. Direct links: [Windows](https://github.com/Hudsoonvid/Swipe/releases/latest/download/Swipe-Host-Setup.exe) · [Mac](https://github.com/Hudsoonvid/Swipe/releases/latest/download/Swipe-Host-mac.dmg) · [Linux](https://github.com/Hudsoonvid/Swipe/releases/latest/download/Swipe-Host-linux.AppImage).
+   - Windows: if it says "Windows protected your PC" (the app isn't code-signed), click *More info → Run anyway*.
+   - Mac: right-click the app → *Open* the first time, then turn on Swipe Host under *System Settings → Privacy & Security → Screen Recording* and *Accessibility*, and restart it.
+   - Linux: make the AppImage executable and run it. Control needs an X11 (Xorg) session.
 
-**Open it here:** https://hudsoonvid.github.io/Swipe/ (works in Safari on iPhone and iPad, too; use *Share → Add to Home Screen* for an app icon). Paste its contents into any online HTML runner, or save it and open it in Chrome, Edge, Firefox or Safari.
+   Swipe Host shows a **code** and **password**, starts with the PC, and keeps running in the tray when you close its window.
+2. **On your phone, iPad, laptop or TV:** open https://hudsoonvid.github.io/Swipe/ (on iPhone/iPad, *Share → Add to Home Screen* gives you an app icon), enter the code and password, and tap **Connect**. You can also scan the QR code shown on the PC.
+3. **The first time**, the PC asks **"Allow?"**. Click *Allow*. That device is now **paired**: it's listed under **My PCs**, and next time you just tap the PC, with no password.
 
-- On the computer you want to share, click **Share my screen**. You get a code and a password.
-- On the other device, open the same page and enter them.
+The installers are rebuilt and published automatically on every change to `main` (release "Swipe Host (latest)"). To run from source instead: `npm ci --prefix desktop && npm start --prefix desktop`.
 
-Devices find each other through the free public [PeerJS](https://peerjs.com) service, which also provides relay servers. The password is still checked end to end, and it's tied to each connection's encryption fingerprint, so the PeerJS service can't learn the password or sit in the middle of the connection.
-
-### Control your PC from any device (like Steam Link)
-
-1. On the PC, install the **Swipe Host** app (the desktop app from [Releases](../../releases), or `npm ci --prefix desktop && npm start --prefix desktop`). It starts sharing by itself and keeps the same code and password, so your PC is always reachable. Close the window and it keeps running in the tray. Use *Start Swipe when I log in* in the tray menu to have it there after every restart.
-2. On your phone, iPad, laptop or TV, open https://hudsoonvid.github.io/Swipe/, enter the PC's code and password, and tap **Connect**.
-3. The first time, the PC asks **"Allow?"**. Click *Allow* there. That device is now **paired**: it shows up under **My PCs**, and next time you just tap the PC, with no password.
-
-While connected you control the PC:
+## Using your PC
 
 - **Mouse and keyboard** work as usual. In full screen, Esc, Alt+Tab and similar keys go to the PC.
 - **Touch** (phone or iPad): *Direct* mode (tap = click, long-press = right-click) or *Trackpad* mode (👆 button). Two fingers scroll, pinch zooms. ⌨ opens the keyboard. ⌘ Keys has Esc, Tab, arrows, Ctrl/Alt/Win, Alt+Tab and *Paste text*.
-- **Game controllers** (Xbox, PlayStation, Switch Pro, or a TV remote that acts as one): plug one into the device you're holding. *Games* layout: left stick = WASD, right stick = mouse look, RT = click, LT = right-click, A = Space, and so on. *Desktop* layout: stick = mouse, A = click. Switch layouts in ⋯.
+- **Game controllers** (Xbox, PlayStation, Switch Pro, or a TV remote that acts as one): connect one to the device you're holding. *Games* layout: left stick = WASD, right stick = mouse look, RT = click, LT = right-click, A = Space, and so on. *Desktop* layout: stick = mouse, A = click. Switch layouts in ⋯.
 - **◀ ▶** switches between the PC's monitors.
+- **⋯** has quality (*Auto*, *Data saver* for mobile data, *Sharpest* for small text) and live stats. The connection comes back by itself after a network drop.
 
-Security: the first connection needs the password, plus a click on the PC when "Ask me before a new device connects" is on (the default in the app). After that, the PC and the device recognise each other by the encryption certificate each one keeps, and a different device can't reuse that. Under **Paired devices** on the PC you can make any device **view only** or **Remove** it (it then needs the password again). Nothing passes through a server in a readable form: the password check (SPAKE2) and the video/input encryption (DTLS) are end to end.
+**Security:** the first connection needs the password, plus a click on the PC when "Ask me before a new device connects" is on (the default). After that, the PC and the device recognise each other by the encryption certificate each keeps, so another device can't pretend to be yours. Under **Paired devices** on the PC you can make any device **view only** or **Remove** it (it then needs the password again). Devices find each other through the free public [PeerJS](https://peerjs.com) service (which also provides relay servers), but the password check (SPAKE2) and the video/input encryption (DTLS) are end to end, so that service can't read anything or get in the middle.
 
-A browser tab can share its screen too, but it can't be controlled: a web page isn't allowed to move your mouse. That's what the app is for.
-
-It also works like a video call:
-
-- **Camera and mic for everyone** (🎤 📷). People show up as tiles, the tile of whoever is talking lights up, and 🔇 shows who's muted.
-- **Raise hand** (✋), **reactions** (😀: 👍 ❤️ 😂 🎉 …), and **Point** (👆): tap the shared screen and everyone sees a marker there with your name.
-- **Chat**, and **switching screens** (◀ ▶) when the sharer offers more than one.
-- **⋯ More** has **picture-in-picture** (keep watching while you use other apps), **quality** (Auto, Data saver for phones on cellular, or Sharpest for small text) and **stats**.
-- **Invite link and QR code** on the sharing page: anyone can scan it with a phone, tablet or TV camera to join. Tick "Include password" to make it one tap.
-- **Reconnects by itself** if the network drops for a moment.
-- **TV-remote and keyboard friendly**: F full screen, M mic, V camera, H hand, P point, C chat, [ ] screens, Esc to close menus. The controls fade away while you watch.
-
-Limits of the single-file version:
-
-- Remote control needs the Swipe Host app on the PC (see above). Sharing from a plain browser tab is watch-only.
-- Screen sharing only works from a computer.
-- Some online editors run pages in a frame that blocks screen capture. If **Share my screen** says it's blocked, open the saved file directly. Viewing works anywhere.
+**Why an app on the PC?** A web page isn't allowed to move your mouse or type. You *can* share a PC's screen from the page itself ("share this screen view-only"), but then it can only be watched; your devices tell you this when you connect.
 
 `swipe.html` is generated: edit `standalone/template.html` and run `npm run build:standalone`.
 
@@ -68,7 +49,9 @@ So, for example:
 
 > **Why can't an iPhone/iPad be controlled?** iOS gives apps no way to tap or type on behalf of the user. That's why TeamViewer, AnyDesk and similar apps can only *view* iPhones and iPads too. Android allows control through an accessibility service, which Swipe uses.
 
-## Quick start
+## Advanced: your own Swipe server (optional)
+
+Everything above works without a server. The rest of this README covers the original server-based setup, which also has Android and iOS apps.
 
 ### 1. Run a Swipe server (once)
 
@@ -113,8 +96,6 @@ The code stays the same for each device. The password is random; you can make a 
 **Controlling an Android phone:** tap, swipe and long-press map directly, and the toolbar has Back, Home and Recents. Typing goes into the focused text field.
 
 **Several screens:** in the desktop app, every monitor is available automatically. In a browser (including `swipe.html`), click **+ Add screen** while sharing to offer another screen or window. Viewers tap **◀ ▶** in the toolbar to move between them (in `swipe.html`, `[` and `]` work too; in the full app those keys go to the remote computer). The picture changes for everyone watching.
-
-**Chat:** everyone in a session can chat: the person sharing (in the Share card) and every viewer (the chat button in the toolbar). New messages pop up briefly on viewers' screens, and people joining see the last 30 messages. Typing in the chat box never goes to the remote computer. Sessions shared from the Android or iOS apps don't have chat yet.
 
 **Toolbar:** you can also disconnect, pick a monitor (multi-screen computers), reset zoom, go full screen, and show live stats (latency, fps, bitrate, direct or relayed).
 

@@ -1,6 +1,6 @@
 {
   "name": "swipe-desktop",
-  "productName": "Swipe",
+  "productName": "Swipe Host",
   "version": "1.0.0",
   "description": "Share this computer's screen and let your other devices control it",
   "main": "main.js",
@@ -26,7 +26,7 @@
   },
   "build": {
     "appId": "app.swipe.desktop",
-    "productName": "Swipe",
+    "productName": "Swipe Host",
     "files": [
       "main.js",
       "preload.cjs",
@@ -50,11 +50,13 @@
     "npmRebuild": false,
     "win": {
       "target": "nsis",
-      "icon": "../web/icons/icon-512.png"
+      "icon": "../web/icons/icon-512.png",
+      "artifactName": "Swipe-Host-Setup.${ext}"
     },
     "nsis": {
       "oneClick": true,
-      "perMachine": false
+      "perMachine": false,
+      "runAfterFinish": true
     },
     "mac": {
       "target": "dmg",
@@ -66,13 +68,15 @@
       "extendInfo": {
         "NSScreenCaptureUsageDescription": "Swipe shares this screen with the devices you connect.",
         "NSAppleEventsUsageDescription": "Swipe controls this Mac on behalf of the devices you connect."
-      }
+      },
+      "artifactName": "Swipe-Host-mac.${ext}"
     },
     "linux": {
       "target": "AppImage",
       "category": "Network",
       "icon": "../web/icons/icon-512.png",
-      "syncDesktopName": true
+      "syncDesktopName": true,
+      "artifactName": "Swipe-Host-linux.${ext}"
     },
     "publish": null
   },

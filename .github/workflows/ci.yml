@@ -150,3 +150,35 @@ jobs:
         with:
           files: artifacts/*
           generate_release_notes: true
+          make_latest: true
+
+  # Every push to main updates the "Swipe Host (latest)" release, so the
+  # download buttons in swipe.html always point at installers that exist.
+  latest:
+    name: Publish latest Swipe Host
+    if: github.ref == 'refs/heads/main'
+    needs: [desktop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move the swipe-host tag to this commit
+        run: |
+          git tag -f swipe-host
+          git push -f origin refs/tags/swipe-host
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: swipe-desktop-*
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: swipe-host
+          name: Swipe Host (latest)
+          body: |
+            Install on the PC you want to use from your other devices, then open https://hudsoonvid.github.io/Swipe/ on your phone, iPad or laptop and enter the code and password it shows.
+            Built from ${{ github.sha }}.
+          files: artifacts/*
+          make_latest: true
+          overwrite_files: true

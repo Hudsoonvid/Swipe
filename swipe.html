@@ -5194,7 +5194,7 @@ const deck = (() => {
   function bindTrackpad(s) {
     const pts = new Map();
     let g = null; // current gesture
-    let lastTapAt = 0;
+    let lastTapAt = -Infinity; // timestamps start at page load, so 0 would look like a recent tap
     const acc = { x: 0, y: 0, sx: 0, sy: 0 };
     let raf = 0;
     const flush = () => {

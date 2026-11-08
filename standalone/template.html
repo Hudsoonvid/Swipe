@@ -220,6 +220,7 @@
     <button id="modeBtn" type="button" title="Touch mode" hidden>👆<span class="long"> Direct</span></button>
     <button id="padBtn" type="button" title="Game controller" hidden>🎮</button>
     <button id="soundBtn" type="button" hidden>Unmute</button>
+    <button id="deckArrangeBtn" type="button" title="Move & resize windows" hidden>⤢<span class="long"> Arrange</span></button>
     <button id="deckBtn" type="button" title="Layout, keyboard size, hotkeys" hidden>⚙<span class="long"> Layout</span></button>
     <button id="fullBtn" type="button" title="Full screen"><span class="long">Full screen</span><span class="short">⛶</span></button>
     <button id="moreBtn" type="button" title="More">⋯</button>
@@ -707,6 +708,13 @@ async function onViewerData(v, d) {
     handleInput(v, d);
   } else if (v.authed && d.type === 'screen' && Number.isInteger(d.index)) {
     switchScreen(d.index, true);
+  } else if (v.authed && v.deck && d.type === 'video') {
+    if (d.on && !v.call) startCall(v);
+    else if (!d.on && v.call) {
+      const c = v.call;
+      v.call = null;
+      c.close();
+    }
   } else if (v.authed && d.type === 'quality' && QUALITY[d.level]) {
     v.quality = d.level;
     const pc = v.call?.peerConnection;
@@ -735,10 +743,11 @@ function admit(v, d) {
   renderDevices();
   v.conn.send({ type: 'welcome', name: hostLabel(), platform: hostPlatform(), control: viewerControl(v), why: whyNoControl(v) });
   v.conn.send(screensMsg());
-  if (v.deck) {
-    if (native) native.notifyViewers?.([...host.viewers.values()].filter((x) => x.authed).map((x) => x.name));
-    return;
-  }
+  if (native) native.notifyViewers?.([...host.viewers.values()].filter((x) => x.authed).map((x) => x.name));
+  if (!v.deck) startCall(v); // a keyboard & trackpad device asks for the picture only if it shows it
+}
+
+function startCall(v) {
   // Media goes over its own connection, which must use the same viewer
   // certificate the password check (or pairing) was bound to.
   const call = host.peer.call(v.conn.peer, activeStream(), { sdpTransform: preferH264 });
@@ -750,13 +759,16 @@ function admit(v, d) {
     });
     setTimeout(() => tuneSenders(pc, v.quality), 0);
   }
-  call.on('close', () => { if (host.viewers.get(v.conn.peer) === v) closeViewer(v); });
-  if (native) native.notifyViewers?.([...host.viewers.values()].filter((x) => x.authed).map((x) => x.name));
+  call.on('close', () => {
+    if (v.call !== call || host.viewers.get(v.conn.peer) !== v) return;
+    if (v.deck) v.call = null; // just the picture; the device stays connected
+    else closeViewer(v);
+  });
 }
 
 // ---------- remote control (only inside the Swipe Host app) ----------
 
-const INPUT_TYPES = new Set(['pm', 'pd', 'pu', 'wh', 'kd', 'ku', 'tx', 'mm']);
+const INPUT_TYPES = new Set(['pm', 'pd', 'pu', 'wh', 'kd', 'ku', 'tx', 'mm', 'pen', 'tap']);
 function hostControl() { return native?.canControl ? 'desktop' : 'none'; }
 function viewerControl(v) { return v.control && hostControl() === 'desktop' ? 'desktop' : 'none'; }
 function whyNoControl(v) { return !native ? 'none-browser' : hostControl() !== 'desktop' ? 'none-permission' : !v.control ? 'none-denied' : ''; }
@@ -970,6 +982,7 @@ $('codeIn').addEventListener('input', (e) => {
 $('connectForm').onsubmit = (e) => { e.preventDefault(); connect($('codeIn').value, $('pwIn').value); };
 $('deckConnectBtn').onclick = () => connect($('codeIn').value, $('pwIn').value, { mode: 'deck' });
 $('deckBtn').onclick = () => deck.openSettings();
+$('deckArrangeBtn').onclick = () => $('deckArrangeBtn').classList.toggle('on', deck.toggleArrange());
 $('cancelBtn').onclick = () => leave();
 $('endBtn').onclick = () => leave();
 
@@ -1113,6 +1126,7 @@ async function connect(codeRaw, password, { retry = false, mode = 'screen' } = {
       if (d?.type === 'ended') { view.noRetry = true; return fail('Swipe Host on the PC stopped.'); }
       if (authed && d?.type === 'screens' && Array.isArray(d.list)) {
         view.screens = { list: d.list.map((l) => cleanText(l, 40)), active: Number(d.active) || 0 };
+        if (view.mode === 'deck') deck.updateScreens();
         return renderViewScreens();
       }
       if (d?.type !== 'pake2' || !spake) return;
@@ -1143,6 +1157,7 @@ async function connect(codeRaw, password, { retry = false, mode = 'screen' } = {
         for (const r of pc.getReceivers()) {
           try { r.jitterBufferTarget = 0; r.playoutDelayHint = 0; } catch {}
         }
+        if (view.mode === 'deck') return deck.setStream(stream);
         const video = $('video');
         video.srcObject = stream;
         video.play().catch(() => {});
@@ -1153,7 +1168,11 @@ async function connect(codeRaw, password, { retry = false, mode = 'screen' } = {
         wakeControls();
         try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
       });
-      call.on('close', () => { if (view.call === call) lost('The other device stopped sharing.'); });
+      call.on('close', () => {
+        if (view.call !== call) return;
+        if (view.mode === 'deck') { view.call = null; deck.setStream(null); return; }
+        lost('The other device stopped sharing.');
+      });
     });
   });
 }
@@ -1262,7 +1281,7 @@ const remote = {
   info: { get platform() { return view.hostPlatform; } },
   send(evt) {
     if (view.control !== 'desktop') return false;
-    const lossy = evt.t === 'pm' || evt.t === 'mm';
+    const lossy = evt.t === 'pm' || evt.t === 'mm' || (evt.t === 'pen' && evt.s === 'hover');
     const ch = lossy && view.inputConn?.open ? view.inputConn : view.conn;
     if (!ch?.open) return false;
     ch.send(evt);
@@ -1282,9 +1301,18 @@ function createInput() {
     textInput: $('kbInput'),
     getTouchMode: () => store.get('touchMode') || 'direct',
     viewerPlatform: viewerPlatform(),
+    penSnap: () => deck.config.snap,
+    penMouse: () => deck.config.penMouse,
   });
   view.input.onstickychange = renderKeysPanel;
   view.input.view.layout();
+}
+// The deck's Screen window asks the PC for its picture (or stops it).
+function setDeckVideo(on) {
+  if (!view.conn?.open || !view.authed) return false;
+  view.conn.send({ type: 'video', on: !!on });
+  if (!on && view.call) { const c = view.call; view.call = null; c.close(); }
+  return true;
 }
 function openInputChannel(peer, hostId) {
   try {
@@ -1302,6 +1330,7 @@ function updateControlUI() {
   const deckMode = view.mode === 'deck';
   $('modeBtn').hidden = !(ctl && touchDevice) || deckMode;
   $('deckBtn').hidden = !deckMode;
+  $('deckArrangeBtn').hidden = !deckMode;
   $('keysBtn').hidden = !ctl || deckMode;
   $('modeBtn').innerHTML = trackpad ? '🖱<span class="long"> Trackpad</span>' : '👆<span class="long"> Direct</span>';
   view.input?.showCursor(ctl && touchDevice && trackpad);

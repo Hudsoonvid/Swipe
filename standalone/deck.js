@@ -1,17 +1,16 @@
 // ---------- control deck: keyboard + trackpad + hotkeys for a tablet ----------
 //
-// Turns an iPad (or any touch screen) into the PC's keyboard and trackpad,
-// without video. The layout is fully customizable: which panels show, their
-// order, side by side or stacked, their sizes, the keyboard size (60%–100%)
-// and a Stream Deck-style grid of hotkeys/macros. Saved per device.
+// Turns an iPad (or any touch screen) into the PC's keyboard, trackpad and
+// hotkey pad, and optionally a live screen to touch directly. Every panel is
+// a window you can move and resize (Stage Manager style); keyboard size
+// 60%–100%, Mac trackpad gestures, Apple Pencil with pressure, and a Stream
+// Deck-style grid of hotkeys/macros. Saved per device.
 //
 // Uses from the main script: $, store, toast, remote, view.
 
 const deck = (() => {
   const css = `
-  .deck { position:absolute; inset:0; top:calc(56px + env(safe-area-inset-top,0px)); display:flex; gap:8px; padding:8px; padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)); background:#07090e; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
-  .deck.row { flex-direction:row; } .deck.column { flex-direction:column; }
-  .dpanel { flex:1 1 0; min-width:0; min-height:0; position:relative; display:flex; flex-direction:column; }
+  .deck { position:absolute; inset:0; top:calc(56px + env(safe-area-inset-top,0px)); padding:4px; padding-bottom:calc(4px + env(safe-area-inset-bottom,0px)); background:#07090e; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   .kb { flex:1; display:grid; column-gap:0; row-gap:var(--kgap,4px); min-height:0; justify-content:center; align-content:center; }
   .kb button { margin:0 calc(var(--kgap,4px) / 2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; min-width:0; min-height:0; padding:0 2px; border-radius:calc(var(--ku,40px) * .14); border:1px solid #2b3446; border-bottom-width:3px; background:#1a2130; color:#e8ecf3; font:600 var(--kfs,14px)/1.05 system-ui,-apple-system,Segoe UI,sans-serif; cursor:pointer; overflow:hidden; white-space:nowrap; }
   .kb button small { font-size:.72em; opacity:.6; font-weight:500; }
@@ -29,6 +28,26 @@ const deck = (() => {
   .hk button.down { background:#4c8dff; }
   .hk.editing button:not(.add)::after { content:'✎'; position:absolute; right:6px; top:4px; font-size:.8rem; color:#9cc0ff; }
   .hk button.add { border-style:dashed; color:#8f9bb0; background:none; }
+  .deck-area { position:relative; width:100%; height:100%; }
+  .deck-empty { color:#8f9bb0; text-align:center; margin-top:20%; }
+  .dwin { position:absolute; padding:4px; display:flex; flex-direction:column; min-width:0; min-height:0; }
+  .dwin-body { flex:1; min-height:0; display:flex; flex-direction:column; position:relative; }
+  .deck.arranging .dwin { outline:2px dashed #4c8dff88; outline-offset:-2px; border-radius:14px; background:#0b0e14cc; }
+  .deck.arranging .dwin-body { pointer-events:none; opacity:.55; }
+  .dwin-bar { height:34px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 6px 0 10px; margin-bottom:4px; border-radius:10px; background:#4c8dff; color:#fff; font:700 .85rem system-ui,sans-serif; cursor:grab; touch-action:none; }
+  .dwin-bar button { border:0; background:none; color:#fff; font-size:1rem; padding:4px 8px; cursor:pointer; }
+  .dwin-size { position:absolute; right:0; bottom:0; width:36px; height:36px; border-radius:0 0 14px 0; background:linear-gradient(135deg, transparent 50%, #4c8dff 50%); cursor:nwse-resize; touch-action:none; z-index:2; }
+  .tp-buttons .tp-mode { flex:0 0 auto; padding:0 12px; color:#e8ecf3; }
+  .scr-switch { display:flex; align-items:center; gap:4px; }
+  .scr-switch span { font:600 .8rem system-ui,sans-serif; color:#e8ecf3; white-space:nowrap; padding:0 4px; }
+  .scr-switch button { border-radius:10px; border:1px solid #2b3446; background:#161c28; color:#e8ecf3; min-width:40px; height:100%; min-height:32px; font-size:.9rem; }
+  .tp-switch { flex:0 0 auto; }
+  .scr { flex:1; position:relative; border-radius:14px; overflow:hidden; background:#000; border:1px solid #2b3446; min-height:0; }
+  .scr video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; pointer-events:none; }
+  .scr-surface { position:absolute; inset:0; touch-action:none; }
+  .scr-msg { position:absolute; inset:0; display:grid; place-items:center; color:#8f9bb0; font-size:.9rem; }
+  .scr-bar { position:absolute; right:8px; top:8px; z-index:2; padding:4px; border-radius:12px; background:rgba(18,23,34,.85); }
+  .kb.kb-pad button:not([data-code=Space]) { opacity:.25; }
   .sheet { position:absolute; inset:0; z-index:8; background:rgba(5,7,12,.7); display:grid; place-items:center; padding:12px; }
   .sheet > div { width:min(560px,100%); max-height:100%; overflow:auto; background:#161c28; border:1px solid #262e3d; border-radius:16px; padding:16px; }
   .sheet h3 { margin:0 0 10px; } .sheet h4 { margin:14px 0 6px; font-size:.85rem; color:#8f9bb0; text-transform:uppercase; letter-spacing:.04em; }
@@ -200,53 +219,75 @@ const deck = (() => {
   ];
 
   // ----- settings -----
+  // Every panel is a window placed in % of the deck: {x, y, w, h, z}. Presets
+  // are starting positions; "Arrange" lets you drag and resize them freely.
+  const PANELS = { screen: 'Screen', keyboard: 'Keyboard', trackpad: 'Trackpad', hotkeys: 'Hotkeys' };
+  const R = (x, y, w, h) => ({ x, y, w, h });
   const PRESETS = {
-    'kb-top': { label: 'Keyboard top, trackpad bottom', dir: 'column', order: ['keyboard', 'trackpad'], sizes: { keyboard: 55, trackpad: 45 } },
-    'pad-top': { label: 'Trackpad top, keyboard bottom', dir: 'column', order: ['trackpad', 'keyboard'], sizes: { keyboard: 55, trackpad: 45 } },
-    'kb-left': { label: 'Keyboard left, trackpad right', dir: 'row', order: ['keyboard', 'trackpad'], sizes: { keyboard: 62, trackpad: 38 } },
-    'kb-right': { label: 'Trackpad left, keyboard right', dir: 'row', order: ['trackpad', 'keyboard'], sizes: { keyboard: 62, trackpad: 38 } },
-    pad: { label: 'Trackpad only', dir: 'column', order: ['trackpad'], sizes: { trackpad: 100 } },
-    kb: { label: 'Keyboard only', dir: 'column', order: ['keyboard'], sizes: { keyboard: 100 } },
-    deck: { label: 'Hotkeys + trackpad', dir: 'row', order: ['hotkeys', 'trackpad'], sizes: { hotkeys: 55, trackpad: 45 } },
+    'kb-top': { label: 'Keyboard top, trackpad bottom', win: { keyboard: R(0, 0, 100, 56), trackpad: R(0, 56, 100, 44) } },
+    'pad-top': { label: 'Trackpad top, keyboard bottom', win: { trackpad: R(0, 0, 100, 44), keyboard: R(0, 44, 100, 56) } },
+    'kb-left': { label: 'Keyboard left, trackpad right', win: { keyboard: R(0, 0, 62, 100), trackpad: R(62, 0, 38, 100) } },
+    'kb-right': { label: 'Trackpad left, keyboard right', win: { trackpad: R(0, 0, 38, 100), keyboard: R(38, 0, 62, 100) } },
+    pad: { label: 'Trackpad only', win: { trackpad: R(0, 0, 100, 100) } },
+    kb: { label: 'Keyboard only', win: { keyboard: R(0, 0, 100, 100) } },
+    deck: { label: 'Hotkeys + trackpad', win: { hotkeys: R(0, 0, 55, 100), trackpad: R(55, 0, 45, 100) } },
+    'screen-kb': { label: 'Screen + keyboard', win: { screen: R(0, 0, 100, 60), keyboard: R(0, 60, 100, 40) } },
+    screen: { label: 'Screen only (touch it directly)', win: { screen: R(0, 0, 100, 100) } },
   };
-  const PANELS = { keyboard: 'Keyboard', trackpad: 'Trackpad', hotkeys: 'Hotkeys' };
+  const HIDDEN = () => ({ show: false, x: 15, y: 12, w: 70, h: 70, z: 0 });
+  function presetWindows(id) {
+    const p = PRESETS[id] || PRESETS['kb-top'];
+    const out = {};
+    let z = 1;
+    for (const pid of Object.keys(PANELS)) out[pid] = p.win[pid] ? { show: true, ...p.win[pid], z: z++ } : HIDDEN();
+    return out;
+  }
   function defaults() {
-    return { preset: 'kb-top', dir: 'column', panels: [
-      { id: 'hotkeys', show: false, size: 22 }, { id: 'keyboard', show: true, size: 55 }, { id: 'trackpad', show: true, size: 45 },
-    ], kb: 80, speed: 1, natural: true, cols: 4, hotkeys: DEFAULT_HOTKEYS.map((h) => ({ ...h })) };
+    return {
+      preset: 'kb-top', windows: presetWindows('kb-top'), kb: 80, cols: 4,
+      padMode: 'trackpad', speed: 1, scroll: 1, natural: true, snap: true, penMouse: false, gestures: true, threeDrag: false,
+      hotkeys: DEFAULT_HOTKEYS.map((x) => ({ ...x })),
+    };
   }
   let cfg = load();
   function load() {
     try {
       const c = JSON.parse(store.get('deck') || 'null');
-      if (c && Array.isArray(c.panels) && Array.isArray(c.hotkeys)) return { ...defaults(), ...c };
+      if (c && Array.isArray(c.hotkeys)) {
+        const m = { ...defaults(), ...c };
+        if (!c.windows) m.windows = presetWindows(PRESETS[c.preset] ? c.preset : 'kb-top'); // older saved layout
+        for (const pid of Object.keys(PANELS)) m.windows[pid] ??= HIDDEN();
+        delete m.panels;
+        delete m.dir;
+        return m;
+      }
     } catch {}
     return defaults();
   }
   function save() { store.set('deck', JSON.stringify(cfg)); }
   function applyPreset(id) {
-    const p = PRESETS[id];
-    const hk = cfg.panels.find((x) => x.id === 'hotkeys');
-    const keepHotkeys = id !== 'deck' && hk?.show;
-    const order = keepHotkeys ? ['hotkeys', ...p.order] : p.order;
     cfg.preset = id;
-    cfg.dir = p.dir;
-    cfg.panels = [...order, ...Object.keys(PANELS).filter((x) => !order.includes(x))].map((pid) => ({
-      id: pid, show: order.includes(pid), size: p.sizes[pid] ?? (pid === 'hotkeys' ? 22 : 40),
-    }));
+    cfg.windows = presetWindows(id);
     save();
     render();
   }
 
   // ----- DOM -----
   let root = null;
-  let editing = false;
+  let editing = false; // editing hotkeys
+  let arranging = false; // moving & resizing windows
+  let stream = null; // the PC's picture, for the Screen window
+  let videoWanted = null; // what we last asked the PC for
+  const pens = new Set();
   const state = { fn: false, latched: new Set(), held: new Map(), usedWhileHeld: false, repeat: null };
 
   function send(evt) { return remote.send(evt); }
   function capture(el, e) { try { el.setPointerCapture(e.pointerId); } catch {} }
   function down(code) { send({ t: 'kd', code, key: code }); }
   function up(code) { send({ t: 'ku', code, key: code }); }
+  const penBusy = () => [...pens].some((p) => p.active); // palm rejection
+  const r5 = (v) => Math.round(Math.min(1, Math.max(0, v)) * 100000) / 100000;
+  const norm = (rect, x, y) => ({ x: (x - rect.left) / rect.width, y: (y - rect.top) / rect.height });
 
   function buildKeyboard() {
     const el = document.createElement('div');
@@ -269,7 +310,8 @@ const deck = (() => {
         if (MODS.has(it.code) || it.code === 'Fn' || it.w > 1.2) b.classList.add('mod');
         b._key = it;
         labelKey(b);
-        bindKey(b);
+        if (it.code === 'Space') bindSpace(b, el);
+        else bindKey(b);
         el.append(b);
         x += it.w;
       }
@@ -301,6 +343,44 @@ const deck = (() => {
     el.style.setProperty('--kfs', `${Math.max(9, Math.min(22, u0 * 0.34))}px`);
     el.style.setProperty('--kgap', `${g}px`);
   }
+  // Like the iPad keyboard: hold the space bar and slide to move the pointer.
+  function bindSpace(b, kb) {
+    let t = 0, pad = false, last = null;
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      capture(b, e);
+      b.classList.add('down');
+      last = { x: e.clientX, y: e.clientY };
+      pad = false;
+      t = setTimeout(() => { pad = true; kb.classList.add('kb-pad'); }, 400);
+    });
+    b.addEventListener('pointermove', (e) => {
+      if (!pad || !last) return;
+      const dx = e.clientX - last.x, dy = e.clientY - last.y;
+      last = { x: e.clientX, y: e.clientY };
+      const gain = cfg.speed * 2.2;
+      const mx = Math.round(dx * gain), my = Math.round(dy * gain);
+      if (mx || my) send({ t: 'mm', dx: mx, dy: my, all: 1 });
+    });
+    const end = (e) => {
+      if (!b.classList.contains('down')) return;
+      clearTimeout(t);
+      b.classList.remove('down');
+      kb.classList.remove('kb-pad');
+      last = null;
+      if (pad || e.type === 'pointercancel') { pad = false; return; }
+      down('Space');
+      up('Space');
+      if (state.latched.size) {
+        for (const m of [...state.latched].reverse()) up(m);
+        state.latched.clear();
+        relabel();
+      }
+    };
+    b.addEventListener('pointerup', end);
+    b.addEventListener('pointercancel', end);
+  }
+
   function bindKey(b) {
     b.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -350,13 +430,115 @@ const deck = (() => {
     b.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
+  // Mac trackpad gestures, sent as the matching shortcut for the PC's system.
+  const SYS = {
+    overview: { windows: 'Win+Tab', mac: 'Ctrl+Up', linux: 'Win' }, // swipe up: Mission Control / Task View
+    appWindows: { windows: 'Win+D', mac: 'Ctrl+Down', linux: 'Win' }, // swipe down: App Exposé / show desktop
+    deskNext: { windows: 'Ctrl+Win+Right', mac: 'Ctrl+Right', linux: 'Ctrl+Alt+Right' }, // swipe left
+    deskPrev: { windows: 'Ctrl+Win+Left', mac: 'Ctrl+Left', linux: 'Ctrl+Alt+Left' }, // swipe right
+    launcher: { windows: 'Win', mac: 'Cmd+Space', linux: 'Win' }, // pinch thumb + 3 fingers: Launchpad / Start
+    desktop: { windows: 'Win+D', mac: 'Cmd+F3', linux: 'Win+D' }, // spread thumb + 3 fingers
+    notifications: { windows: 'Win+N', mac: '', linux: '' }, // 2 fingers in from the right edge
+    lookUp: { windows: '', mac: 'Ctrl+Cmd+D', linux: '' }, // 3-finger tap (Windows/Linux: middle click)
+    zoomReset: { windows: 'Ctrl+0', mac: 'Cmd+0', linux: 'Ctrl+0' },
+  };
+  function sysGesture(name) {
+    const plat = ['mac', 'linux'].includes(view.hostPlatform) ? view.hostPlatform : 'windows';
+    const action = SYS[name]?.[plat];
+    if (action) runAction(action).catch(() => {});
+    return !!action;
+  }
+  // One pinch step: Ctrl + wheel on Windows/Linux, ⌘= / ⌘- on a Mac.
+  function zoomStep(dir, p) {
+    if (mac()) return runAction(dir > 0 ? 'Cmd+=' : 'Cmd+-').catch(() => {});
+    down('ControlLeft');
+    send(p ? { t: 'wh', x: r5(p.x), y: r5(p.y), dx: 0, dy: dir > 0 ? -100 : 100 } : { t: 'wh', dx: 0, dy: dir > 0 ? -100 : 100 });
+    up('ControlLeft');
+  }
+
+  // Two-finger scrolling with momentum, like a laptop trackpad.
+  function makeScroller(getPoint) {
+    const acc = { x: 0, y: 0 };
+    let vel = { x: 0, y: 0 };
+    let lastT = 0;
+    let raf = 0;
+    let glide = 0;
+    const flush = () => {
+      raf = 0;
+      const dx = Math.trunc(acc.x), dy = Math.trunc(acc.y);
+      if (!dx && !dy) return;
+      acc.x -= dx;
+      acc.y -= dy;
+      const p = getPoint?.();
+      send(p ? { t: 'wh', x: r5(p.x), y: r5(p.y), dx, dy } : { t: 'wh', dx, dy });
+    };
+    return {
+      // dx, dy: how far the fingers moved (CSS px); t: event time
+      move(dx, dy, t) {
+        cancelAnimationFrame(glide);
+        glide = 0;
+        const k = 3.2 * cfg.scroll * (cfg.natural ? -1 : 1);
+        acc.x += dx * k;
+        acc.y += dy * k;
+        const dt = Math.max(1, t - lastT);
+        lastT = t;
+        vel = { x: 0.7 * vel.x + 0.3 * ((dx * k) / dt), y: 0.7 * vel.y + 0.3 * ((dy * k) / dt) };
+        if (!raf) raf = requestAnimationFrame(flush);
+      },
+      // Fingers lifted while moving: keep gliding and slow down.
+      end(t) {
+        if (t - lastT > 90 || Math.hypot(vel.x, vel.y) < 0.4) return;
+        const v = { ...vel };
+        let prev = performance.now();
+        const step = (now) => {
+          const dt = Math.min(50, now - prev);
+          prev = now;
+          acc.x += v.x * dt;
+          acc.y += v.y * dt;
+          const f = Math.pow(0.9955, dt);
+          v.x *= f;
+          v.y *= f;
+          flush();
+          glide = Math.hypot(v.x, v.y) > 0.05 ? requestAnimationFrame(step) : 0;
+        };
+        glide = requestAnimationFrame(step);
+      },
+      stop() {
+        cancelAnimationFrame(glide);
+        glide = 0;
+        vel = { x: 0, y: 0 };
+      },
+    };
+  }
+
+  // ◀ Screen 1/2 ▶ for PCs with several monitors.
+  function screenSwitch(cls) {
+    const el = document.createElement('div');
+    el.className = cls;
+    const prev = btn('◀', () => stepScreen(-1));
+    const label = document.createElement('span');
+    const next = btn('▶', () => stepScreen(1));
+    el.append(prev, label, next);
+    el._update = () => {
+      const sc = view.screens;
+      el.hidden = !(sc && sc.list.length > 1);
+      if (!el.hidden) label.textContent = `${sc.list[sc.active] || 'Screen'} (${sc.active + 1}/${sc.list.length})`;
+    };
+    el._update();
+    return el;
+  }
+  function updateScreens() { root?.querySelectorAll('.scr-switch').forEach((s) => s._update?.()); }
+
   function buildTrackpad() {
     const el = document.createElement('div');
     el.className = 'tp';
     const surface = document.createElement('div');
     surface.className = 'tp-surface';
     surface.id = 'tpSurface';
-    surface.innerHTML = 'Trackpad<br><small>1 finger moves · tap clicks · 2 fingers scroll · 2-finger tap right-clicks · tap then drag to drag</small>';
+    const direct = cfg.padMode === 'direct';
+    surface.innerHTML = direct
+      ? 'Direct<br><small>each spot here is the same spot on the PC screen · tap clicks · hold right-clicks · drag drags · 2 fingers scroll</small>'
+      : 'Trackpad<br><small>1 finger moves · tap clicks · 2 fingers scroll · 2-finger tap right-clicks · tap then drag to drag · Apple Pencil points directly</small>';
     const btns = document.createElement('div');
     btns.className = 'tp-buttons';
     for (const [label, b] of [['Left click', 0], ['Right click', 2]]) {
@@ -370,42 +552,102 @@ const deck = (() => {
       x.addEventListener('pointercancel', end);
       btns.append(x);
     }
+    const mode = btn(direct ? '🎯 Direct' : '🖱 Trackpad', () => { cfg.padMode = direct ? 'trackpad' : 'direct'; save(); render(); });
+    mode.className = 'tp-mode';
+    mode.id = 'tpMode';
+    btns.append(mode);
+    if (direct) btns.append(screenSwitch('scr-switch tp-switch'));
     el.append(surface, btns);
-    bindTrackpad(surface);
+    bindSurface(surface, { direct: () => cfg.padMode === 'direct', rect: () => surface.getBoundingClientRect() });
     return el;
   }
-  function bindTrackpad(s) {
+
+  // Touch & pen on a surface. Pencil: always absolute. Fingers: relative
+  // (trackpad) or absolute (direct: that spot on the surface = that spot on the screen).
+  function bindSurface(s, { direct, rect }) {
+    const pen = new PenInput({
+      send,
+      toNorm: (x, y) => norm(rect(), x, y),
+      snap: () => cfg.snap,
+      mouse: () => cfg.penMouse,
+    });
+    pens.add(pen);
     const pts = new Map();
-    let g = null; // current gesture
+    let g = null;
     let lastTapAt = -Infinity; // timestamps start at page load, so 0 would look like a recent tap
-    const acc = { x: 0, y: 0, sx: 0, sy: 0 };
+    const acc = { x: 0, y: 0 };
     let raf = 0;
+    let pmPending = null;
     const flush = () => {
       raf = 0;
       const dx = Math.trunc(acc.x), dy = Math.trunc(acc.y);
       if (dx || dy) { acc.x -= dx; acc.y -= dy; send({ t: 'mm', dx, dy, all: 1 }); }
-      const sx = Math.trunc(acc.sx), sy = Math.trunc(acc.sy);
-      if (sx || sy) { acc.sx -= sx; acc.sy -= sy; send({ t: 'wh', dx: sx, dy: sy }); }
+      if (pmPending) { send({ t: 'pm', x: r5(pmPending.x), y: r5(pmPending.y) }); pmPending = null; }
     };
     const queue = () => { if (!raf) raf = requestAnimationFrame(flush); };
+    const mid = () => {
+      const [a, b] = [...pts.values()];
+      return norm(rect(), (a.x + b.x) / 2, (a.y + b.y) / 2);
+    };
+    // Centre and spread (average distance from the centre) of the fingers down.
+    const shape = () => {
+      const all = [...pts.values()];
+      const cx = all.reduce((t, q) => t + q.x, 0) / all.length, cy = all.reduce((t, q) => t + q.y, 0) / all.length;
+      return { cx, cy, spread: all.reduce((t, q) => t + Math.hypot(q.x - cx, q.y - cy), 0) / all.length, dist: all.length === 2 ? Math.hypot(all[0].x - all[1].x, all[0].y - all[1].y) : 0 };
+    };
+    let lastTwoTap = -Infinity;
+    let rightTimer = 0;
+    let smartZoomed = false;
+    const scroller = makeScroller(() => (direct() && pts.size >= 2 ? mid() : null));
     s.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       capture(s, e);
+      if (e.pointerType === 'pen') return pen.down(e);
+      if (penBusy()) return; // palm resting while using the Pencil
+      scroller.stop();
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY, t: e.timeStamp });
       if (pts.size === 1) {
-        g = { kind: 'one', start: e.timeStamp, moved: 0, dragArm: e.timeStamp - lastTapAt < 300, dragging: false };
+        const p = norm(rect(), e.clientX, e.clientY);
+        g = { kind: 'one', start: e.timeStamp, sx: e.clientX, sy: e.clientY, p, moved: 0, dragArm: e.timeStamp - lastTapAt < 300, dragging: false };
+        if (direct()) {
+          const me = g;
+          g.timer = setTimeout(() => {
+            if (g !== me || me.moved > 10) return;
+            me.done = true; // held still: right-click there
+            send({ t: 'tap', x: r5(me.p.x), y: r5(me.p.y), b: 2 });
+            navigator.vibrate?.(15);
+          }, 550);
+        }
       } else if (pts.size === 2) {
-        if (g?.dragging) { send({ t: 'pu', b: 0 }); }
-        g = { kind: 'two', start: g?.start ?? e.timeStamp, moved: 0 };
-      } else if (g) g.kind = 'many';
+        clearTimeout(g?.timer);
+        if (g?.dragging) send(direct() ? { t: 'pu', x: r5(g.last?.x ?? g.p.x), y: r5(g.last?.y ?? g.p.y), b: 0 } : { t: 'pu', b: 0 });
+        const sh = shape(), r = rect();
+        g = { kind: 'two', start: g?.start ?? e.timeStamp, moved: 0, mode: null, d0: sh.dist, dl: sh.dist, c0: sh, edge: cfg.gestures && r.left + r.width - sh.cx < 40 };
+      } else if (g) {
+        // Three or more fingers: system gestures (or three-finger drag).
+        if (g.dragging) send({ t: 'pu', b: 0 });
+        const sh = shape();
+        g = { kind: 'many', n: pts.size, start: g.start, moved: 0, c0: sh, c: sh, dragging: false };
+      }
     });
     s.addEventListener('pointermove', (e) => {
-      const p = pts.get(e.pointerId);
-      if (!p || !g) return;
-      const dx = e.clientX - p.x, dy = e.clientY - p.y, dt = Math.max(1, e.timeStamp - p.t);
-      p.x = e.clientX; p.y = e.clientY; p.t = e.timeStamp;
+      if (e.pointerType === 'pen') return pen.move(e);
+      const pt = pts.get(e.pointerId);
+      if (!pt || !g) return;
+      const dx = e.clientX - pt.x, dy = e.clientY - pt.y, dt = Math.max(1, e.timeStamp - pt.t);
+      pt.x = e.clientX; pt.y = e.clientY; pt.t = e.timeStamp;
       g.moved += Math.hypot(dx, dy);
-      if (g.kind === 'one') {
+      if (g.kind === 'one' && direct()) {
+        const p = norm(rect(), e.clientX, e.clientY);
+        g.last = p;
+        if (!g.dragging && !g.done && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 10) {
+          clearTimeout(g.timer);
+          g.dragging = true;
+          send({ t: 'pm', x: r5(g.p.x), y: r5(g.p.y) });
+          send({ t: 'pd', x: r5(g.p.x), y: r5(g.p.y), b: 0 });
+        }
+        if (g.dragging) { pmPending = p; queue(); }
+      } else if (g.kind === 'one') {
         if (g.dragArm && !g.dragging && g.moved > 6) { g.dragging = true; send({ t: 'pd', b: 0 }); }
         // Pointer acceleration: slow moves are precise, fast moves cover the screen.
         const v = Math.hypot(dx, dy) / dt;
@@ -413,33 +655,145 @@ const deck = (() => {
         acc.x += dx * gain;
         acc.y += dy * gain;
         queue();
-      } else if (g.kind === 'two') {
-        const k2 = (cfg.natural ? -1 : 1) * 1.6 / 2; // two pointers each report the move
-        acc.sx += dx * k2;
-        acc.sy += dy * k2;
-        queue();
+      } else if (g.kind === 'two' && pts.size === 2) {
+        const sh = shape();
+        if (!g.mode) {
+          const pan = Math.hypot(sh.cx - g.c0.cx, sh.cy - g.c0.cy);
+          if (cfg.gestures && Math.abs(sh.dist - g.d0) > 30 && Math.abs(sh.dist - g.d0) > pan) g.mode = 'zoom';
+          else if (g.edge && pan > 40) g.mode = sh.cx - g.c0.cx < -30 && Math.abs(sh.cy - g.c0.cy) < 40 ? 'edge' : 'scroll';
+          else if (!g.edge && pan > 10) g.mode = 'scroll';
+        }
+        if (g.mode === 'scroll') scroller.move(dx / 2, dy / 2, e.timeStamp); // each finger reports the move
+        else if (g.mode === 'zoom') {
+          while (Math.abs(sh.dist - g.dl) >= 45) {
+            const dir = Math.sign(sh.dist - g.dl);
+            g.dl += 45 * dir;
+            zoomStep(dir, direct() ? mid() : null);
+          }
+        }
+      } else if (g.kind === 'many') {
+        if (pts.size > g.n) { g.n = pts.size; g.c0 = g.c = shape(); return; }
+        if (pts.size !== g.n) return; // a finger is lifting
+        const sh = shape();
+        if (cfg.threeDrag && g.n === 3) {
+          if (!g.dragging && Math.hypot(sh.cx - g.c0.cx, sh.cy - g.c0.cy) > 6) { g.dragging = true; send({ t: 'pd', b: 0 }); }
+          if (g.dragging) {
+            acc.x += (sh.cx - g.c.cx) * cfg.speed * 1.8;
+            acc.y += (sh.cy - g.c.cy) * cfg.speed * 1.8;
+            queue();
+          }
+        }
+        g.c = sh;
       }
     });
     const end = (e) => {
+      if (e.pointerType === 'pen') return pen.up(e, e.type === 'pointercancel');
       if (!pts.delete(e.pointerId) || !g) return;
       if (pts.size) return;
+      clearTimeout(g.timer);
       const dur = e.timeStamp - g.start;
-      if (g.kind === 'one') {
+      if (g.kind === 'one' && direct()) {
+        if (g.dragging) {
+          flush();
+          const p = g.last || g.p;
+          send({ t: 'pu', x: r5(p.x), y: r5(p.y), b: 0 });
+        } else if (!g.done && e.type !== 'pointercancel') {
+          send({ t: 'tap', x: r5(g.p.x), y: r5(g.p.y), b: 0, ...(cfg.snap ? { snap: 1 } : {}) });
+        }
+      } else if (g.kind === 'one') {
         if (g.dragging) send({ t: 'pu', b: 0 });
         else if (dur < 230 && g.moved < 10) {
           send({ t: 'pd', b: 0 });
           send({ t: 'pu', b: 0 });
           lastTapAt = e.timeStamp;
         }
-      } else if (g.kind === 'two' && dur < 280 && g.moved < 16) {
-        send({ t: 'pd', b: 2 });
-        send({ t: 'pu', b: 2 });
+      } else if (g.kind === 'two') {
+        if (dur < 280 && g.moved < 16) {
+          const p = direct() ? norm(rect(), e.clientX, e.clientY) : null;
+          const rightClick = () => {
+            send(p ? { t: 'tap', x: r5(p.x), y: r5(p.y), b: 2 } : { t: 'pd', b: 2 });
+            if (!p) send({ t: 'pu', b: 2 });
+          };
+          if (!cfg.gestures) rightClick();
+          else if (e.timeStamp - lastTwoTap < 350) {
+            // Two-finger double tap: smart zoom (in, then back to normal).
+            clearTimeout(rightTimer);
+            lastTwoTap = -Infinity;
+            if (smartZoomed) sysGesture('zoomReset');
+            else { zoomStep(1, p); zoomStep(1, p); }
+            smartZoomed = !smartZoomed;
+          } else {
+            lastTwoTap = e.timeStamp;
+            rightTimer = setTimeout(rightClick, 300); // unless a second tap makes it smart zoom
+          }
+        } else if (g.mode === 'edge') sysGesture('notifications');
+        else if (g.mode === 'scroll') scroller.end(e.timeStamp);
+      } else if (g.kind === 'many') {
+        if (g.dragging) { flush(); send({ t: 'pu', b: 0 }); }
+        else if (cfg.gestures) {
+          const dx = g.c.cx - g.c0.cx, dy = g.c.cy - g.c0.cy, ratio = g.c.spread / Math.max(1, g.c0.spread);
+          if (g.n >= 4 && ratio < 0.65) sysGesture('launcher');
+          else if (g.n >= 4 && ratio > 1.5) sysGesture('desktop');
+          else if (Math.hypot(dx, dy) > 70) {
+            if (Math.abs(dy) > Math.abs(dx)) sysGesture(dy < 0 ? 'overview' : 'appWindows');
+            else sysGesture(dx < 0 ? 'deskNext' : 'deskPrev');
+          } else if (g.n === 3 && dur < 300 && g.moved < 30) {
+            if (!sysGesture('lookUp')) { send({ t: 'pd', b: 1 }); send({ t: 'pu', b: 1 }); } // middle click
+          }
+        }
       }
       g = null;
     };
     s.addEventListener('pointerup', end);
     s.addEventListener('pointercancel', end);
+    s.addEventListener('pointerleave', (e) => e.pointerType === 'pen' && pen.leave(e));
     s.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  // The PC's live picture: touch it directly (and use the Pencil on it).
+  function buildScreen() {
+    const el = document.createElement('div');
+    el.className = 'scr';
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true;
+    video.srcObject = stream;
+    const msg = document.createElement('div');
+    msg.className = 'scr-msg';
+    msg.textContent = 'Starting the picture…';
+    msg.hidden = !!stream;
+    const surf = document.createElement('div');
+    surf.className = 'scr-surface';
+    surf.id = 'scrSurface';
+    el.append(video, msg, surf, screenSwitch('scr-switch scr-bar'));
+    video.play?.().catch(() => {});
+    // Where the picture is inside the window (letterboxed).
+    const rect = () => {
+      const r = video.getBoundingClientRect();
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if (!vw || !vh) return r;
+      const k = Math.min(r.width / vw, r.height / vh);
+      const w = vw * k, h = vh * k;
+      return { left: r.left + (r.width - w) / 2, top: r.top + (r.height - h) / 2, width: w, height: h };
+    };
+    bindSurface(surf, { direct: () => true, rect });
+    return el;
+  }
+  function setStream(s) {
+    stream = s;
+    root?.querySelectorAll('.scr').forEach((el) => {
+      const v = el.querySelector('video');
+      v.srcObject = s;
+      v.play?.().catch(() => {});
+      el.querySelector('.scr-msg').hidden = !!s;
+    });
+  }
+  function wantsVideo() { return !!cfg.windows.screen?.show; }
+  function syncVideo() {
+    const want = wantsVideo();
+    if (want === videoWanted) return;
+    if (typeof setDeckVideo === 'function' && setDeckVideo(want)) videoWanted = want;
   }
 
   function buildHotkeys() {
@@ -476,16 +830,115 @@ const deck = (() => {
     for (const m of state.latched) up(m);
     state.latched.clear();
     state.fn = false;
-    root.className = `deck ${cfg.dir === 'row' ? 'row' : 'column'}`;
-    const build = { keyboard: buildKeyboard, trackpad: buildTrackpad, hotkeys: buildHotkeys };
-    root.replaceChildren(...cfg.panels.filter((p) => p.show && build[p.id]).map((p) => {
-      const panel = document.createElement('div');
-      panel.className = 'dpanel';
-      panel.dataset.panel = p.id;
-      panel.style.flex = `${Math.max(5, p.size)} 1 0`;
-      panel.append(build[p.id]());
-      return panel;
-    }));
+    pens.clear();
+    root.className = 'deck' + (arranging ? ' arranging' : '');
+    const build = { screen: buildScreen, keyboard: buildKeyboard, trackpad: buildTrackpad, hotkeys: buildHotkeys };
+    const area = document.createElement('div');
+    area.className = 'deck-area';
+    const wins = Object.entries(cfg.windows).filter(([id, w]) => w.show && build[id]).sort((a, b) => a[1].z - b[1].z);
+    for (const [id, w] of wins) {
+      const win = document.createElement('div');
+      win.className = 'dwin';
+      win.dataset.panel = id;
+      place(win, w);
+      const body = document.createElement('div');
+      body.className = 'dwin-body';
+      body.append(build[id]());
+      if (arranging) {
+        const bar = document.createElement('div');
+        bar.className = 'dwin-bar';
+        bar.append(Object.assign(document.createElement('b'), { textContent: `⠿ ${PANELS[id]}` }), btn('✕', () => { w.show = false; cfg.preset = ''; save(); render(); }));
+        const size = document.createElement('div');
+        size.className = 'dwin-size';
+        win.append(bar, body, size);
+        bindArrange(win, id, bar, size, area);
+      } else win.append(body);
+      area.append(win);
+    }
+    if (!wins.length) area.append(Object.assign(document.createElement('p'), { className: 'deck-empty', textContent: 'No windows shown. Tap ⚙ Layout to pick a preset or turn windows on.' }));
+    root.replaceChildren(area);
+    syncVideo();
+  }
+  function place(el, w) {
+    el.style.left = `${w.x}%`;
+    el.style.top = `${w.y}%`;
+    el.style.width = `${w.w}%`;
+    el.style.height = `${w.h}%`;
+    el.style.zIndex = String(w.z || 0);
+  }
+  // Stage Manager style: drag a window by its bar, resize from the corner.
+  // Edges snap to the deck's edges and to other windows' edges.
+  function bindArrange(win, id, bar, size, area) {
+    const w = cfg.windows[id];
+    const front = () => {
+      const top = Math.max(0, ...Object.values(cfg.windows).map((x) => x.z || 0));
+      if (w.z !== top) { w.z = top + 1; win.style.zIndex = String(w.z); }
+    };
+    const edges = (axis) => {
+      const out = [0, 100];
+      for (const [oid, o] of Object.entries(cfg.windows)) {
+        if (oid === id || !o.show) continue;
+        if (axis === 'x') out.push(o.x, o.x + o.w);
+        else out.push(o.y, o.y + o.h);
+      }
+      return out;
+    };
+    const snap = (v, cands) => {
+      for (const c of cands) if (Math.abs(v - c) < 2) return c;
+      return Math.round(v * 2) / 2;
+    };
+    const drag = (handle, resize) => {
+      handle.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button')) return;
+        e.preventDefault();
+        capture(handle, e);
+        front();
+        const r = area.getBoundingClientRect();
+        const s0 = { px: e.clientX, py: e.clientY, xp: w.x, yp: w.y, w: w.w, h: w.h };
+        const move = (ev) => {
+          const dx = ((ev.clientX - s0.px) / r.width) * 100;
+          const dy = ((ev.clientY - s0.py) / r.height) * 100;
+          if (resize) {
+            const right = snap(s0.xp + s0.w + dx, edges('x'));
+            const bottom = snap(s0.yp + s0.h + dy, edges('y'));
+            w.w = Math.max(14, Math.min(100 - w.x, right - w.x));
+            w.h = Math.max(12, Math.min(100 - w.y, bottom - w.y));
+          } else {
+            const xs = edges('x'), ys = edges('y');
+            let x = s0.xp + dx, y = s0.yp + dy;
+            const sx = snap(x, xs), sxr = snap(x + w.w, xs) - w.w;
+            x = Math.abs(sx - x) <= Math.abs(sxr - x) ? sx : sxr;
+            const sy = snap(y, ys), syb = snap(y + w.h, ys) - w.h;
+            y = Math.abs(sy - y) <= Math.abs(syb - y) ? sy : syb;
+            w.x = Math.max(0, Math.min(100 - w.w, x));
+            w.y = Math.max(0, Math.min(100 - w.h, y));
+          }
+          place(win, w);
+        };
+        const done = () => {
+          handle.removeEventListener('pointermove', move);
+          handle.removeEventListener('pointerup', done);
+          handle.removeEventListener('pointercancel', done);
+          cfg.preset = '';
+          save();
+          render(); // panels re-measure at their new size
+        };
+        handle.addEventListener('pointermove', move);
+        handle.addEventListener('pointerup', done);
+        handle.addEventListener('pointercancel', done);
+      });
+    };
+    drag(bar, false);
+    drag(size, true);
+    win.addEventListener('pointerdown', front);
+  }
+  function toggleArrange(on = !arranging) {
+    arranging = on;
+    editing = false;
+    closeSheet();
+    render();
+    if (on) toast('Drag a window by its top bar, resize it from the corner. Tap ⤢ again when done.', 5000);
+    return arranging;
   }
 
   // ----- settings sheet -----
@@ -514,30 +967,29 @@ const deck = (() => {
       for (const [id, p] of Object.entries(PRESETS)) presets.append(btn(p.label, () => { applyPreset(id); openSettings(); }, cfg.preset === id ? 'on' : ''));
       box.append(presets);
 
-      box.append(h('h4', 'Arrange'));
-      const dir = document.createElement('div');
-      dir.className = 'opts';
-      for (const [id, label] of [['column', 'Stacked (top to bottom)'], ['row', 'Side by side']]) {
-        dir.append(btn(label, () => { cfg.dir = id; cfg.preset = ''; save(); render(); openSettings(); }, cfg.dir === id ? 'on' : ''));
+      box.append(h('h4', 'Windows'));
+      const wins = document.createElement('div');
+      wins.className = 'opts';
+      for (const [pid, label] of Object.entries(PANELS)) {
+        const w = cfg.windows[pid];
+        const b = btn(`${w.show ? '☑' : '☐'} ${label}`, () => {
+          w.show = !w.show;
+          if (w.show) w.z = Math.max(0, ...Object.values(cfg.windows).map((x) => x.z || 0)) + 1;
+          cfg.preset = '';
+          save();
+          render();
+          openSettings();
+        }, w.show ? 'on' : '');
+        b.dataset.panel = pid;
+        wins.append(b);
       }
-      box.append(dir);
-      cfg.panels.forEach((p, i) => {
-        const row = document.createElement('div');
-        row.className = 'row';
-        const lab = document.createElement('label');
-        const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: p.show });
-        cb.style.width = 'auto';
-        cb.dataset.panel = p.id;
-        cb.onchange = () => { p.show = cb.checked; cfg.preset = ''; save(); render(); };
-        lab.append(cb, ` ${PANELS[p.id]}`);
-        const size = Object.assign(document.createElement('input'), { type: 'range', min: 10, max: 90, value: p.size });
-        size.oninput = () => { p.size = Number(size.value); cfg.preset = ''; save(); render(); };
-        row.append(lab, size,
-          btn('↑', () => { if (i) { [cfg.panels[i - 1], cfg.panels[i]] = [cfg.panels[i], cfg.panels[i - 1]]; cfg.preset = ''; save(); render(); openSettings(); } }),
-          btn('↓', () => { if (i < cfg.panels.length - 1) { [cfg.panels[i + 1], cfg.panels[i]] = [cfg.panels[i], cfg.panels[i + 1]]; cfg.preset = ''; save(); render(); openSettings(); } }));
-        box.append(row);
-      });
-      box.append(Object.assign(h('p', '↑ ↓ change the order (top/left first). Sliders set each panel’s share of the screen.'), { className: 'hint' }));
+      box.append(wins);
+      const arr = document.createElement('div');
+      arr.className = 'opts';
+      arr.style.marginTop = '6px';
+      arr.append(btn('⤢ Move & resize windows', () => toggleArrange(true)));
+      box.append(arr);
+      box.append(Object.assign(h('p', 'Windows can overlap; drag them anywhere and resize them from the corner, like Stage Manager. The Screen window shows the PC’s picture so you can touch it directly.'), { className: 'hint' }));
 
       box.append(h('h4', 'Keyboard size'));
       const sizes = document.createElement('div');
@@ -549,20 +1001,44 @@ const deck = (() => {
       box.append(Object.assign(h('p', 'On 60% and 70%, Fn + number row gives F1–F12, Fn + I J K L gives arrows, Fn + Esc gives `.'), { className: 'hint' }));
 
       box.append(h('h4', 'Trackpad'));
-      const sp = document.createElement('div');
-      sp.className = 'row';
-      const speed = Object.assign(document.createElement('input'), { type: 'range', min: 0.3, max: 3, step: 0.1, value: cfg.speed });
-      speed.oninput = () => { cfg.speed = Number(speed.value); save(); };
-      sp.append(h('label', 'Pointer speed'), speed);
-      const nat = document.createElement('div');
-      nat.className = 'row';
-      const natLab = document.createElement('label');
-      const natCb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: cfg.natural });
-      natCb.style.width = 'auto';
-      natCb.onchange = () => { cfg.natural = natCb.checked; save(); };
-      natLab.append(natCb, ' Natural scrolling (content follows your fingers)');
-      nat.append(natLab);
-      box.append(sp, nat);
+      const modes = document.createElement('div');
+      modes.className = 'opts';
+      for (const [m, label] of [['trackpad', '🖱 Trackpad (moves the pointer)'], ['direct', '🎯 Direct (spot = spot on screen)']]) {
+        modes.append(btn(label, () => { cfg.padMode = m; save(); render(); openSettings(); }, cfg.padMode === m ? 'on' : ''));
+      }
+      box.append(modes);
+      const slider = (label, key, min, max, step) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const r = Object.assign(document.createElement('input'), { type: 'range', min, max, step, value: cfg[key] });
+        r.dataset.key = key;
+        r.oninput = () => { cfg[key] = Number(r.value); save(); };
+        row.append(h('label', label), r);
+        box.append(row);
+      };
+      slider('Pointer speed', 'speed', 0.3, 3, 0.1);
+      slider('Scroll speed', 'scroll', 0.3, 4, 0.1);
+      const check = (label, key, after) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const lab = document.createElement('label');
+        const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: !!cfg[key] });
+        cb.style.width = 'auto';
+        cb.dataset.key = key;
+        cb.onchange = () => { cfg[key] = cb.checked; save(); after?.(); };
+        lab.append(cb, ` ${label}`);
+        row.append(lab);
+        box.append(row);
+      };
+      check('Natural scrolling (content follows your fingers)', 'natural');
+      check('Mac trackpad gestures (pinch, smart zoom, 3–4 finger swipes, …)', 'gestures');
+      check('Three-finger drag (move windows with three fingers)', 'threeDrag');
+      box.append(Object.assign(h('p', 'Pinch: zoom · two-finger double-tap: smart zoom · 3 or 4 fingers up: Task View / Mission Control · down: show desktop / App Exposé · left/right: switch desktops · pinch thumb and 3 fingers: Start / Launchpad · spread them: show desktop · 3-finger tap: middle click / Look Up · 2 fingers in from the right edge: notifications · hold the space bar and slide: move the pointer.'), { className: 'hint' }));
+
+      box.append(h('h4', 'Apple Pencil & taps'));
+      check('Snap taps to the nearest button (Pencil, and fingers in Direct / Screen)', 'snap');
+      check('Pencil acts as a plain mouse (no pressure)', 'penMouse');
+      box.append(Object.assign(h('p', 'The Pencil always points exactly where you touch: on the Screen window, in Direct mode, and on the trackpad (like a drawing tablet). Pressure and tilt reach drawing apps on Windows. Your palm is ignored while you write. Snapping uses Windows’ accessibility info to find buttons, links and menus near a tap.'), { className: 'hint' }));
 
       box.append(h('h4', 'Hotkeys'));
       const hc = document.createElement('div');
@@ -575,8 +1051,12 @@ const deck = (() => {
       hb.className = 'opts';
       hb.append(btn(editing ? 'Done editing hotkeys' : '✎ Edit hotkeys', () => {
         editing = !editing;
-        const hk = cfg.panels.find((p) => p.id === 'hotkeys');
-        if (editing && !hk.show) { hk.show = true; save(); }
+        arranging = false;
+        if (editing && !cfg.windows.hotkeys.show) {
+          cfg.windows.hotkeys.show = true;
+          cfg.windows.hotkeys.z = Math.max(0, ...Object.values(cfg.windows).map((x) => x.z || 0)) + 1;
+          save();
+        }
         render();
         closeSheet();
         if (editing) toast('Tap a hotkey to change it, or + Add. Tap ⚙ → Done editing when finished.', 5000);
@@ -589,6 +1069,7 @@ const deck = (() => {
       box.append(end);
     });
   }
+
 
   function editHotkey(i) {
     const cur = i >= 0 ? cfg.hotkeys[i] : { icon: '⭐', label: '', action: '' };
@@ -648,19 +1129,28 @@ const deck = (() => {
     }
     root.hidden = false;
     cfg = load();
+    videoWanted = null; // ask the PC again after (re)connecting
     render();
   }
   function hide() {
     closeSheet();
     editing = false;
+    arranging = false;
     for (const m of state.latched) up(m);
     for (const m of state.held.keys()) up(m);
     state.latched.clear();
     state.held.clear();
     clearTimeout(state.repeat?.t);
     clearInterval(state.repeat?.i);
+    stream = null;
+    videoWanted = null;
+    pens.clear();
     root?.remove();
     root = null;
   }
-  return { show, hide, openSettings, parseAction, runAction, get config() { return cfg; }, applyPreset };
+  return {
+    show, hide, openSettings, parseAction, runAction, applyPreset, toggleArrange, setStream, wantsVideo, updateScreens,
+    get config() { return cfg; },
+    get arranging() { return arranging; },
+  };
 })();

@@ -61,6 +61,7 @@
   .pcs .main { flex:1; min-width:0; cursor:pointer; }
   .pcs .main b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pcs .main span { color:var(--muted); font-size:.82rem; }
+  .pcs .deck-go { border:1px solid var(--line); background:var(--bg); color:var(--text); border-radius:9px; padding:6px 9px; font-size:.95rem; cursor:pointer; }
   .pcs .x { border:0; background:none; color:var(--muted); font-size:1rem; cursor:pointer; padding:4px 8px; }
   .devices { list-style:none; margin:8px 0 0; padding:0; display:grid; gap:6px; }
   .devices li { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; background:var(--bg2); }
@@ -99,6 +100,9 @@
   .note b { display:block; margin-bottom:4px; }
   .note button { margin-top:8px; }
   .session.idle .bar { opacity:0; }
+  .session.deck-mode.idle .bar { opacity:1; }
+  .session.deck-mode .stage, .session.deck-mode #prevScreenBtn, .session.deck-mode #nextScreenBtn, .session.deck-mode #screenLabel, .session.deck-mode #soundBtn { display:none !important; }
+  .session.deck-mode { background:#07090e; }
   .session.idle { cursor:none; }
   .preview-wrap { position:relative; margin-top:12px; border-radius:12px; overflow:hidden; background:#000; aspect-ratio:16/9; }
   .preview-wrap video { width:100%; height:100%; object-fit:contain; display:block; }
@@ -142,6 +146,7 @@
         <label for="nameIn">Name for this device <span class="muted">(shown on the PC, optional)</span></label>
         <input id="nameIn" maxlength="30" placeholder="e.g. My iPad" autocomplete="off" style="font:inherit;letter-spacing:normal" />
         <button class="btn primary" id="connectBtn" type="submit">Connect</button>
+        <button class="btn" id="deckConnectBtn" type="button" style="width:100%;margin-top:8px">⌨🖱 Use as keyboard &amp; trackpad</button>
         <p class="error" id="connectErr" hidden></p>
       </form>
       <div id="pcsWrap" hidden>
@@ -215,6 +220,7 @@
     <button id="modeBtn" type="button" title="Touch mode" hidden>👆<span class="long"> Direct</span></button>
     <button id="padBtn" type="button" title="Game controller" hidden>🎮</button>
     <button id="soundBtn" type="button" hidden>Unmute</button>
+    <button id="deckBtn" type="button" title="Layout, keyboard size, hotkeys" hidden>⚙<span class="long"> Layout</span></button>
     <button id="fullBtn" type="button" title="Full screen"><span class="long">Full screen</span><span class="short">⛶</span></button>
     <button id="moreBtn" type="button" title="More">⋯</button>
   </div>
@@ -717,17 +723,22 @@ const QUALITY = {
   sharp: { maxBitrate: 15_000_000, maxFramerate: 30, scaleResolutionDownBy: 1, degradation: 'maintain-resolution' },
 };
 function admit(v, d) {
-  v.name = uniqueName(cleanText(d.name, 30) || 'Viewer');
+  v.deck = d.mode === 'deck'; // keyboard & trackpad only: no video
+  v.name = uniqueName((cleanText(d.name, 30) || 'Viewer') + (v.deck ? ' (keyboard & trackpad)' : ''));
   v.quality = ['auto', 'saver', 'sharp'].includes(d.quality) ? d.quality : 'auto';
   const known = devices.get(v.fp);
   v.control = known ? known.control !== false : true;
-  devices.put({ fp: v.fp, name: cleanText(d.name, 30) || v.name, control: v.control });
+  devices.put({ fp: v.fp, name: cleanText(d.name, 30) || deviceLabel(v), control: v.control });
   v.state = 'authed';
   v.authed = true;
   renderViewers();
   renderDevices();
   v.conn.send({ type: 'welcome', name: hostLabel(), platform: hostPlatform(), control: viewerControl(v), why: whyNoControl(v) });
   v.conn.send(screensMsg());
+  if (v.deck) {
+    if (native) native.notifyViewers?.([...host.viewers.values()].filter((x) => x.authed).map((x) => x.name));
+    return;
+  }
   // Media goes over its own connection, which must use the same viewer
   // certificate the password check (or pairing) was bound to.
   const call = host.peer.call(v.conn.peer, activeStream(), { sdpTransform: preferH264 });
@@ -753,6 +764,7 @@ function hostPlatform() {
   if (native?.platform) return { win32: 'windows', darwin: 'mac', linux: 'linux' }[native.platform] || native.platform;
   return /Mac/.test(navigator.userAgent) ? 'mac' : /Windows/.test(navigator.userAgent) ? 'windows' : 'linux';
 }
+function deviceLabel(v) { return v.name.replace(/ \(keyboard & trackpad\)$/, ''); }
 function hostLabel() { return native?.hostname || deviceName(); }
 function handleInput(v, e) {
   if (!INPUT_TYPES.has(e.t) || viewerControl(v) !== 'desktop') return;
@@ -956,6 +968,8 @@ $('codeIn').addEventListener('input', (e) => {
   if (d.length === 9) $('pwIn').focus();
 });
 $('connectForm').onsubmit = (e) => { e.preventDefault(); connect($('codeIn').value, $('pwIn').value); };
+$('deckConnectBtn').onclick = () => connect($('codeIn').value, $('pwIn').value, { mode: 'deck' });
+$('deckBtn').onclick = () => deck.openSettings();
 $('cancelBtn').onclick = () => leave();
 $('endBtn').onclick = () => leave();
 
@@ -979,10 +993,10 @@ function lost(msg) {
   teardown();
   $('session').hidden = false;
   overlay(`Connection lost. Reconnecting (${view.retries}/5)…`);
-  view.retryTimer = setTimeout(() => connect(view.join.code, view.join.password, { retry: true }), 1200 * view.retries);
+  view.retryTimer = setTimeout(() => connect(view.join.code, view.join.password, { retry: true, mode: view.join.mode }), 1200 * view.retries);
 }
 
-async function connect(codeRaw, password, { retry = false } = {}) {
+async function connect(codeRaw, password, { retry = false, mode = 'screen' } = {}) {
   const err = $('connectErr');
   showErr(err, '');
   const code = normalizeCode(codeRaw);
@@ -995,7 +1009,9 @@ async function connect(codeRaw, password, { retry = false } = {}) {
     view.noRetry = false;
     view.wasLive = false;
   }
-  view.join = { code, password };
+  view.join = { code, password, mode };
+  view.mode = mode;
+  $('session').classList.toggle('deck-mode', mode === 'deck');
   $('home').hidden = true;
   $('session').hidden = false;
   if (!view.input) createInput();
@@ -1036,7 +1052,7 @@ async function connect(codeRaw, password, { retry = false } = {}) {
         // Paired before: both sides recognise each other's certificate, so no
         // password is needed (WebRTC itself proves who holds each certificate).
         hostVerified = true;
-        return conn.send({ type: 'hello', name: myName(), quality: view.quality });
+        return conn.send({ type: 'hello', name: myName(), quality: view.quality, mode });
       }
       if (!normalizePassword(password)) {
         view.noRetry = true;
@@ -1066,6 +1082,21 @@ async function connect(codeRaw, password, { retry = false } = {}) {
         view.hostPlatform = cleanText(d.platform, 20);
         updateControlUI();
         if (view.control === 'desktop') openInputChannel(peer, conn.peer);
+        if (mode === 'deck') {
+          if (view.control !== 'desktop') {
+            view.noRetry = true;
+            return fail(d.why === 'none-browser'
+              ? 'That PC is shared from a web browser, which can’t be controlled. Install Swipe Host on the PC.'
+              : d.why === 'none-denied' ? 'The PC set this device to view only.' : 'Swipe Host on the PC is missing permission to control it.');
+          }
+          view.wasLive = true;
+          view.retries = 0;
+          overlay(null);
+          deck.show();
+          wakeControls();
+          try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
+          return;
+        }
         if (!retry) overlay('Starting video…');
         if (view.control !== 'desktop' && !retry) showViewOnlyNote(String(d.why || 'none-browser'));
         return;
@@ -1088,7 +1119,7 @@ async function connect(codeRaw, password, { retry = false } = {}) {
       let confirm;
       try { confirm = await spake.finish(d.Y); } catch { return fail('The other device sent an invalid response.'); }
       const ok = spake.verify(d.confirm);
-      conn.send({ type: 'pake3', confirm, name: myName(), quality: view.quality });
+      conn.send({ type: 'pake3', confirm, name: myName(), quality: view.quality, mode });
       if (!ok) { view.noRetry = true; return setTimeout(() => fail(ERRORS.auth_failed), 200); }
       hostVerified = true; // now wait for 'welcome' (the PC may ask its owner first)
     });
@@ -1161,6 +1192,9 @@ function leave() {
   renderViewScreens();
   $('moreMenu').hidden = true;
   $('viewOnlyNote').hidden = true;
+  deck.hide();
+  view.mode = 'screen';
+  $('session').classList.remove('deck-mode');
   stopStats();
   view.input?.destroy();
   view.input = null;
@@ -1240,7 +1274,8 @@ function viewerPlatform() {
 }
 function createInput() {
   view.input = new InputController({
-    stage: $('stage'),
+    // The deck has its own trackpad; a physical keyboard still goes through here.
+    stage: view.mode === 'deck' ? document.createElement('div') : $('stage'),
     video: $('video'),
     session: remote,
     cursor: $('cursor'),
@@ -1264,7 +1299,10 @@ function updateControlUI() {
   const trackpad = store.get('touchMode') === 'trackpad';
   $('kbBtn').hidden = !ctl;
   $('keysBtn').hidden = !ctl;
-  $('modeBtn').hidden = !(ctl && touchDevice);
+  const deckMode = view.mode === 'deck';
+  $('modeBtn').hidden = !(ctl && touchDevice) || deckMode;
+  $('deckBtn').hidden = !deckMode;
+  $('keysBtn').hidden = !ctl || deckMode;
   $('modeBtn').innerHTML = trackpad ? '🖱<span class="long"> Trackpad</span>' : '👆<span class="long"> Direct</span>';
   view.input?.showCursor(ctl && touchDevice && trackpad);
   const hasPad = ctl && pad.index !== null;
@@ -1446,7 +1484,13 @@ function renderPcs() {
     x.title = 'Forget this PC';
     x.textContent = '✕';
     x.onclick = () => { pcs.remove(p.code); renderPcs(); };
-    li.append(main, x);
+    const kb = document.createElement('button');
+    kb.className = 'deck-go';
+    kb.type = 'button';
+    kb.title = 'Use as keyboard & trackpad';
+    kb.textContent = '⌨🖱';
+    kb.onclick = () => connect(p.code, $('codeIn').value.replace(/\D/g, '') === p.code ? $('pwIn').value : '', { mode: 'deck' });
+    li.append(main, kb, x);
     return li;
   }));
 }
@@ -1569,7 +1613,10 @@ function showViewOnlyNote(control) {
 }
 $('viewOnlyOk').onclick = () => ($('viewOnlyNote').hidden = true);
 // Exposed for automated tests.
-window.__swipe = { host, view, connect, startSharing };
+window.__swipe = { host, view, connect, startSharing, get deck() { return deck; } };
+</script>
+<script>
+/*__DECK__*/
 </script>
 </body>
 </html>

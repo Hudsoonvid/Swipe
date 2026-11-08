@@ -60,6 +60,8 @@ jobs:
           SWIPE_SERVER: ${{ vars.SWIPE_SERVER }}
         shell: bash
         run: |
+          # Every build gets a higher version, so installed apps see it as an update.
+          npm version "1.0.${{ github.run_number }}" --no-git-tag-version --allow-same-version
           if [ -n "$SWIPE_SERVER" ]; then
             node -e "const f='package.json',p=require('./'+f);p.swipeServer=process.env.SWIPE_SERVER;require('fs').writeFileSync(f,JSON.stringify(p,null,2))"
           fi
@@ -71,6 +73,7 @@ jobs:
             desktop/release/*.exe
             desktop/release/*.dmg
             desktop/release/*.AppImage
+            desktop/release/latest*.yml
           if-no-files-found: error
 
   android:

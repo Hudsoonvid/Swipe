@@ -25,7 +25,26 @@ The installers are rebuilt and published automatically on every change to `main`
 - **◀ ▶** switches between the PC's monitors.
 - **⋯** has quality (*Auto*, *Data saver* for mobile data, *Sharpest* for small text) and live stats. The connection comes back by itself after a network drop.
 
-**Security:** the first connection needs the password, plus a click on the PC when "Ask me before a new device connects" is on (the default). After that, the PC and the device recognise each other by the encryption certificate each keeps, so another device can't pretend to be yours. Under **Paired devices** on the PC you can make any device **view only** or **Remove** it (it then needs the password again). Devices find each other through the free public [PeerJS](https://peerjs.com) service (which also provides relay servers), but the password check (SPAKE2) and the video/input encryption (DTLS) are end to end, so that service can't read anything or get in the middle.
+### iPad (or any tablet) as the PC's keyboard and trackpad
+
+On the iPad, open https://hudsoonvid.github.io/Swipe/ and tap **⌨🖱 Use as keyboard & trackpad** (or the ⌨🖱 button next to a PC under *My PCs*). The iPad becomes a wireless keyboard, trackpad and hotkey pad for the PC. No video is sent, so it uses almost no data.
+
+- **Trackpad:** one finger moves the pointer (with acceleration, across all monitors), tap = click, two-finger tap = right-click, two fingers scroll, tap then drag = drag. There are also Left/Right click buttons.
+- **Keyboard:** real keys you can hold. Tap Ctrl/Shift/Alt/Win once and it applies to the next key (e.g. Ctrl, then C), or hold it with another finger. A Magic Keyboard or other physical keyboard works too, and ⌨ in the toolbar brings up the iPad's own keyboard (dictation, other languages).
+- **⚙ Layout** makes it your own:
+  - Presets: keyboard top / trackpad bottom (and the reverse), keyboard left / trackpad right (and the reverse), trackpad only, keyboard only, hotkeys + trackpad.
+  - Or arrange it yourself: stacked or side by side, the order of the panels and how much space each gets.
+  - Keyboard size: **60%**, **70%** (adds arrows), **80%** (tenkeyless), **90%** (compact with numpad) or **100%**. On 60% and 70%, *Fn* + number row gives F1–F12 and Fn + I J K L gives arrows.
+  - Trackpad speed and natural scrolling.
+- **Hotkeys (like a Stream Deck):** a grid of buttons for shortcuts and macros. *⚙ → Edit hotkeys* to add, change, reorder or delete them. An action is a key combo (`Ctrl+Shift+Esc`, `Win+Shift+S`, `VolUp`), text in quotes (`"hello"`), a pause (`wait 300`), or several of those separated by commas: `Win+R, wait 400, "notepad", Enter`. `Mod` means Ctrl on Windows and ⌘ on a Mac.
+
+Your layout and hotkeys are saved on the iPad.
+
+### Updates
+
+Swipe Host updates itself on Windows and Linux: it checks GitHub every few hours, downloads new versions in the background and installs them when no device has been connected for a minute, then comes back in the tray. (A Mac app has to be code-signed to update itself, so on a Mac download new versions from the page.) The web page is always the newest version.
+
+, plus a click on the PC when "Ask me before a new device connects" is on (the default). After that, the PC and the device recognise each other by the encryption certificate each keeps, so another device can't pretend to be yours. Under **Paired devices** on the PC you can make any device **view only** or **Remove** it (it then needs the password again). Devices find each other through the free public [PeerJS](https://peerjs.com) service (which also provides relay servers), but the password check (SPAKE2) and the video/input encryption (DTLS) are end to end, so that service can't read anything or get in the middle.
 
 **Why an app on the PC?** A web page isn't allowed to move your mouse or type. You *can* share a PC's screen from the page itself ("share this screen view-only"), but then it can only be watched; your devices tell you this when you connect.
 

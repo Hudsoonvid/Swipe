@@ -130,7 +130,7 @@ test('controller: relative moves stay on the shared display; clicks and scrolls 
   inj.handle({ t: 'mm', dx: 24, dy: -10 });
   r.pos = { x: 1925, y: 5 };
   inj.handle({ t: 'mm', dx: -24, dy: -24 }); // clamped to the display's corner
-  inj.handle({ t: 'mm', dx: 99999, dy: 0 }); // capped per event
+  inj.handle({ t: 'mm', dx: 99999, dy: 0 }); // capped per event (400)
   inj.handle({ t: 'mm', dx: 0, dy: 0 });
   inj.handle({ t: 'pd', b: 0 });
   inj.handle({ t: 'pu', b: 0 });
@@ -138,9 +138,22 @@ test('controller: relative moves stay on the shared display; clicks and scrolls 
   assert.deepEqual(r.calls.filter((c) => c[0] !== 'setMouseDelay' && c[0] !== 'setKeyboardDelay'), [
     ['moveMouse', 3024, 690],
     ['moveMouse', 1920, 0],
-    ['moveMouse', 2125, 5],
+    ['moveMouse', 2325, 5],
     ['mouseToggle', 'down', 'left'],
     ['mouseToggle', 'up', 'left'],
     ['scrollMouse', -0, -2],
+  ]);
+});
+
+test('trackpad: relative moves can cross onto other monitors', () => {
+  const r = fakeRobot();
+  const all = () => ({ x: 0, y: 0, width: 4480, height: 1440 }); // two monitors side by side
+  const inj = new Injector({ robot: r, getBounds: bounds, getAllBounds: all, platform: 'win32' });
+  r.pos = { x: 1925, y: 100 };
+  inj.handle({ t: 'mm', dx: -300, dy: 0, all: true }); // onto the left monitor
+  inj.handle({ t: 'mm', dx: -300, dy: 0 }); // a controller stays on the shared one
+  assert.deepEqual(r.calls.filter((c) => c[0] === 'moveMouse'), [
+    ['moveMouse', 1625, 100],
+    ['moveMouse', 1920, 100],
   ]);
 });

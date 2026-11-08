@@ -103,9 +103,10 @@ class Injector {
    *   coordinate space robot.moveMouse uses on this OS
    * platform: process.platform
    */
-  constructor({ robot, getBounds, platform = process.platform }) {
+  constructor({ robot, getBounds, getAllBounds, platform = process.platform }) {
     this.robot = robot;
     this.getBounds = getBounds;
+    this.getAllBounds = getAllBounds || getBounds; // every monitor (trackpad mode)
     this.platform = platform;
     this.down = new Set(); // pressed mouse buttons
     this.keys = new Set(); // pressed robot key names
@@ -130,12 +131,13 @@ class Injector {
     return this._moveTo(this._point(evt));
   }
 
-  // Relative move (controller stick), kept on the shared display.
+  // Relative move: a controller stick stays on the shared display; the
+  // trackpad (evt.all) moves across every monitor like a real mouse.
   _nudge(evt) {
-    const dx = Math.max(-200, Math.min(200, Math.round(Number(evt.dx) || 0)));
-    const dy = Math.max(-200, Math.min(200, Math.round(Number(evt.dy) || 0)));
+    const dx = Math.max(-400, Math.min(400, Math.round(Number(evt.dx) || 0)));
+    const dy = Math.max(-400, Math.min(400, Math.round(Number(evt.dy) || 0)));
     if (!dx && !dy) return;
-    const b = this.getBounds();
+    const b = evt.all ? this.getAllBounds() : this.getBounds();
     const cur = this.robot.getMousePos();
     this._moveTo({
       x: Math.min(b.x + b.width - 1, Math.max(b.x, cur.x + dx)),

@@ -26,6 +26,7 @@ const {
 } = require('electron');
 const { pathToFileURL } = require('node:url');
 const { Injector } = require('./input');
+const fsSync = require('node:fs');
 const pkg = require('./package.json');
 
 const WEB_ROOT = app.isPackaged ? path.join(process.resourcesPath, 'web') : path.join(__dirname, '..', 'web');
@@ -44,6 +45,16 @@ const PEER_SERVER = process.env.SWIPE_PEER_HOST
     }
   : null;
 const WAYLAND = process.platform === 'linux' && (process.env.XDG_SESSION_TYPE === 'wayland' || !!process.env.WAYLAND_DISPLAY);
+
+// Updates: installers are published on GitHub; the app checks for a newer
+// one and installs it when no device is connected (Windows and AppImage;
+// unsigned Mac apps can't update themselves).
+let autoUpdater = null;
+try {
+  ({ autoUpdater } = require('electron-updater'));
+} catch {}
+let updateReady = null; // version downloaded and waiting to install
+let installTimer = null;
 
 let robot = null;
 let robotError = '';
@@ -89,6 +100,25 @@ function selectedDisplay() {
 }
 
 // Bounds of the shared display in the coordinate space robotjs uses.
+// Bounds of a display in robotjs's coordinate space.
+function robotRect(d) {
+  const b = d.bounds;
+  if (process.platform === 'win32') return screen.dipToScreenRect(null, b); // physical pixels
+  if (process.platform === 'linux') {
+    const s = d.scaleFactor || 1;
+    return { x: Math.round(b.x * s), y: Math.round(b.y * s), width: Math.round(b.width * s), height: Math.round(b.height * s) };
+  }
+  return b; // macOS: points
+}
+
+// All monitors together (the trackpad mode moves across every screen).
+function allInputBounds() {
+  const rs = displays().map(robotRect);
+  const x = Math.min(...rs.map((r) => r.x)), y = Math.min(...rs.map((r) => r.y));
+  const r = Math.max(...rs.map((q) => q.x + q.width)), btm = Math.max(...rs.map((q) => q.y + q.height));
+  return { x, y, width: r - x, height: btm - y };
+}
+
 function inputBounds() {
   const d = selectedDisplay();
   const b = d.bounds;
@@ -174,7 +204,9 @@ function updateTray() {
   );
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Open Swipe', click: showWindow },
+      { label: 'Open Swipe Host', click: showWindow },
+      { label: `Version ${app.getVersion()}`, enabled: false },
+      ...(updateReady ? [{ label: `Restart to update (${updateReady})`, click: installUpdate }] : []),
       { type: 'separator' },
       sharing
         ? { label: 'Stop sharing', click: () => win?.webContents.send('command', 'stop-sharing') }
@@ -211,7 +243,7 @@ function createTray() {
 
 // ---------- IPC ----------
 
-const injector = robot ? new Injector({ robot, getBounds: inputBounds }) : null;
+const injector = robot ? new Injector({ robot, getBounds: inputBounds, getAllBounds: allInputBounds }) : null;
 
 function canControl() {
   if (!injector) return false;
@@ -264,7 +296,47 @@ ipcMain.on('attention', (_e, msg) => {
 ipcMain.on('status', (_e, s) => {
   hostStatus = { ...hostStatus, ...s };
   updateTray();
+  scheduleInstall();
 });
+
+// ---------- updates ----------
+
+const START_HIDDEN_ONCE = () => path.join(app.getPath('userData'), 'start-hidden-once');
+
+function setupUpdates() {
+  if (!autoUpdater || !app.isPackaged) return;
+  if (process.platform === 'darwin' || (process.platform === 'linux' && !process.env.APPIMAGE)) return;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.disableDifferentialDownload = true;
+  autoUpdater.logger = null;
+  autoUpdater.on('error', () => {}); // offline etc.: try again later
+  autoUpdater.on('update-downloaded', (info) => {
+    updateReady = info.version;
+    updateTray();
+    scheduleInstall();
+  });
+  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  setTimeout(check, 20_000);
+  setInterval(check, 3 * 3600_000);
+}
+
+// Install once nobody has been connected for a minute, then come back in the tray.
+function scheduleInstall() {
+  clearTimeout(installTimer);
+  if (!updateReady || hostStatus.viewers > 0) return;
+  installTimer = setTimeout(installUpdate, 60_000);
+}
+
+function installUpdate() {
+  if (!updateReady || hostStatus.viewers > 0) return;
+  try {
+    fsSync.writeFileSync(START_HIDDEN_ONCE(), '1');
+  } catch {}
+  quitting = true;
+  injector?.releaseAll();
+  autoUpdater.quitAndInstall(true, true);
+}
 
 ipcMain.on('viewers', (_e, names) => {
   // Tell the user whenever a new device starts watching.
@@ -352,7 +424,13 @@ app.whenReady().then(async () => {
   }
 
   createTray();
-  if (process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAsHidden) {
+  let hiddenAfterUpdate = false;
+  try {
+    hiddenAfterUpdate = fsSync.existsSync(START_HIDDEN_ONCE());
+    if (hiddenAfterUpdate) fsSync.unlinkSync(START_HIDDEN_ONCE());
+  } catch {}
+  setupUpdates();
+  if (hiddenAfterUpdate || process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAsHidden) {
     createWindow();
     win.hide();
   } else {

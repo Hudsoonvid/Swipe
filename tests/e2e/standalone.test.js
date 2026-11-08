@@ -327,3 +327,134 @@ test('game controller drives the keyboard and mouse', { timeout: 90_000 }, async
   await waitInput("(e) => e.t === 'mm' && e.dx === -24");
   for (const c of [tv, host]) await c.ctx.close();
 });
+
+test('iPad control deck: keyboard, trackpad and hotkeys with no video; layouts and keyboard sizes', { timeout: 120_000 }, async () => {
+  const host = await open(true, { native: true });
+  await host.page.waitForFunction(() => document.getElementById('shareStatus').textContent.includes('Waiting'), null, { timeout: 15_000 });
+  await host.page.uncheck('#askNew');
+  const code = (await host.page.textContent('#myCode')).replace(/\s/g, '');
+  const password = await host.page.textContent('#myPw');
+
+  const ipad = await open();
+  await ipad.page.setViewportSize({ width: 1180, height: 820 });
+  await ipad.page.fill('#codeIn', code);
+  await ipad.page.fill('#pwIn', password);
+  await ipad.page.fill('#nameIn', 'iPad');
+  await ipad.page.click('#deckConnectBtn');
+  await ipad.page.waitForSelector('#deck .kb button[data-code="KeyA"]', { timeout: 30_000 });
+  assert.equal(await ipad.page.isHidden('#overlay'), true);
+  // No video is sent to a keyboard & trackpad device.
+  await host.page.waitForFunction(() => [...window.__swipe.host.viewers.values()].some((v) => v.authed && v.deck));
+  assert.equal(await host.page.evaluate(() => [...window.__swipe.host.viewers.values()].find((v) => v.authed).call), undefined);
+  assert.match(await host.page.textContent('#viewerList'), /iPad \(keyboard & trackpad\)/);
+  await host.page.waitForFunction(() => window.__swipe.host.viewers.size && [...window.__swipe.host.viewers.values()][0].inputConn?.open, null, { timeout: 10_000 });
+
+  const inputs = () => host.page.evaluate(() => window.__inputs.filter((e) => e.t !== 'release'));
+  const clear = () => host.page.evaluate(() => (window.__inputs.length = 0));
+  const waitFor = (pred) => host.page.waitForFunction(`window.__inputs.some(${pred})`, null, { timeout: 10_000 });
+  const tapKey = async (code) => {
+    const b = ipad.page.locator(`#deck .kb button[data-code="${code}"]`).first();
+    await b.dispatchEvent('pointerdown', { pointerId: 7, isPrimary: true });
+    await b.dispatchEvent('pointerup', { pointerId: 7, isPrimary: true });
+  };
+
+  // Default: keyboard on top, trackpad below, 80% keyboard.
+  assert.equal(await ipad.page.evaluate(() => [...document.querySelectorAll('#deck .dpanel')].map((p) => p.dataset.panel).join()), 'keyboard,trackpad');
+  assert.ok(await ipad.page.locator('#deck .kb button[data-code="F12"]').count());
+
+  // Keys: a plain key, then Ctrl tapped alone sticks for the next key (Ctrl+C).
+  await clear();
+  await tapKey('KeyA');
+  await tapKey('ControlLeft');
+  await tapKey('KeyC');
+  await waitFor("(e) => e.t === 'ku' && e.code === 'ControlLeft'");
+  assert.deepEqual((await inputs()).map((e) => `${e.t}:${e.code}`), ['kd:KeyA', 'ku:KeyA', 'kd:ControlLeft', 'kd:KeyC', 'ku:KeyC', 'ku:ControlLeft']);
+
+  // Trackpad: moving a finger moves the PC pointer (relative, across all monitors); a tap clicks.
+  await clear();
+  const box = await ipad.page.locator('#tpSurface').boundingBox();
+  await ipad.page.mouse.move(box.x + 50, box.y + 50);
+  await ipad.page.mouse.down();
+  await ipad.page.mouse.move(box.x + 150, box.y + 80, { steps: 10 });
+  await ipad.page.mouse.up();
+  await waitFor("(e) => e.t === 'mm'");
+  const moved = (await inputs()).filter((e) => e.t === 'mm');
+  assert.ok(moved.every((e) => e.all === 1));
+  assert.ok(moved.reduce((s, e) => s + e.dx, 0) > 100, JSON.stringify(moved));
+  assert.equal((await inputs()).some((e) => e.t === 'pd'), false); // a drag is not a click
+  await clear();
+  await ipad.page.mouse.click(box.x + 60, box.y + 60);
+  await waitFor("(e) => e.t === 'pu' && e.b === 0");
+  // Two-finger tap = right click; two-finger drag = scroll.
+  await clear();
+  await ipad.page.evaluate(() => {
+    const s = document.getElementById('tpSurface');
+    const r = s.getBoundingClientRect();
+    const ev = (type, id, x, y) => s.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: r.left + x, clientY: r.top + y, bubbles: true, pointerType: 'touch' }));
+    ev('pointerdown', 1, 50, 50); ev('pointerdown', 2, 90, 50);
+    ev('pointerup', 1, 50, 50); ev('pointerup', 2, 90, 50);
+  });
+  await waitFor("(e) => e.t === 'pu' && e.b === 2");
+  await ipad.page.evaluate(async () => {
+    const s = document.getElementById('tpSurface');
+    const r = s.getBoundingClientRect();
+    const ev = (type, id, x, y) => s.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: r.left + x, clientY: r.top + y, bubbles: true, pointerType: 'touch' }));
+    ev('pointerdown', 3, 50, 150); ev('pointerdown', 4, 90, 150);
+    for (let i = 1; i <= 10; i++) {
+      ev('pointermove', 3, 50, 150 - i * 8); ev('pointermove', 4, 90, 150 - i * 8);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    ev('pointerup', 3, 50, 70); ev('pointerup', 4, 90, 70);
+  });
+  await waitFor("(e) => e.t === 'wh' && e.dy > 0"); // fingers up = scroll down (natural)
+
+  // Layout settings: presets, keyboard size and the Fn layer.
+  await ipad.page.click('#deckBtn');
+  await ipad.page.click('#deckSheet button:has-text("Keyboard left, trackpad right")');
+  await ipad.page.click('#deckSheet button:has-text("60%")');
+  await ipad.page.click('#deckSheet button:has-text("Done")');
+  assert.equal(await ipad.page.getAttribute('#deck', 'class'), 'deck row');
+  assert.equal(await ipad.page.locator('#deck .kb button[data-code="F12"]').count(), 0);
+  await clear();
+  await tapKey('Fn');
+  await tapKey('Digit1');
+  await waitFor("(e) => e.t === 'kd' && e.code === 'F1'");
+  for (const size of ['70%', '90%', '100%']) {
+    await ipad.page.click('#deckBtn');
+    await ipad.page.click(`#deckSheet button:has-text("${size}")`);
+    await ipad.page.click('#deckSheet button:has-text("Done")');
+  }
+  assert.ok(await ipad.page.locator('#deck .kb button[data-code="NumpadEnter"]').count());
+
+  // Hotkeys: a built-in one, then a new macro made in the editor.
+  await ipad.page.click('#deckBtn');
+  await ipad.page.click('#deckSheet button:has-text("Hotkeys + trackpad")');
+  await ipad.page.click('#deckSheet button:has-text("Done")');
+  await clear();
+  await ipad.page.click('#deck .hk button:has-text("Task Manager")');
+  await waitFor("(e) => e.t === 'ku' && e.code === 'ControlLeft'");
+  assert.deepEqual((await inputs()).map((e) => `${e.t}:${e.code}`), ['kd:ControlLeft', 'kd:ShiftLeft', 'kd:Escape', 'ku:Escape', 'ku:ShiftLeft', 'ku:ControlLeft']);
+  await ipad.page.click('#deckBtn');
+  await ipad.page.click('#deckSheet button:has-text("Edit hotkeys")');
+  await ipad.page.click('#deck .hk button.add');
+  await ipad.page.fill('#hkIcon', '📝');
+  await ipad.page.fill('#hkLabel', 'Notepad');
+  await ipad.page.fill('#hkAction', 'Ctrl+Banana');
+  await ipad.page.click('#hkSave');
+  assert.equal(await ipad.page.textContent('#deckSheet .err'), 'Unknown key "Banana"'); // bad input is explained, not saved
+  await ipad.page.fill('#hkAction', 'Win+R, wait 100, "notepad", Enter');
+  await ipad.page.click('#hkSave');
+  await ipad.page.click('#deckBtn');
+  await ipad.page.click('#deckSheet button:has-text("Done editing")');
+  await clear();
+  await ipad.page.click('#deck .hk button:has-text("Notepad")');
+  await waitFor("(e) => e.t === 'ku' && e.code === 'Enter'");
+  assert.deepEqual((await inputs()).map((e) => e.t === 'tx' ? `tx:${e.text}` : `${e.t}:${e.code}`),
+    ['kd:MetaLeft', 'kd:KeyR', 'ku:KeyR', 'ku:MetaLeft', 'tx:notepad', 'kd:Enter', 'ku:Enter']);
+
+  // The layout is remembered for next time.
+  await ipad.page.click('#endBtn');
+  await ipad.page.click('#pcList .deck-go');
+  await ipad.page.waitForSelector('#deck .hk button:has-text("Notepad")', { timeout: 30_000 });
+  for (const c of [ipad, host]) await c.ctx.close();
+});

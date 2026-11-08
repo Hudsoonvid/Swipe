@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@jitsi/robotjs": "^0.6.24",
+    "electron-updater": "^6.8.11",
     "peerjs": "^1.5.5"
   },
   "devDependencies": {
@@ -78,7 +79,12 @@
       "syncDesktopName": true,
       "artifactName": "Swipe-Host-linux.${ext}"
     },
-    "publish": null
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/Hudsoonvid/Swipe/releases/latest/download"
+      }
+    ]
   },
   "repository": "https://github.com/Hudsoonvid/Swipe",
   "desktopName": "swipe.desktop"

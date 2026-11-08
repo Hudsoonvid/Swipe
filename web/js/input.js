@@ -123,13 +123,91 @@ export class View {
 
 // ---------- input controller ----------
 
+// Apple Pencil (or any stylus): absolute position with pressure and tilt.
+// A quick tap goes out as one 'tap' (the PC may snap it onto the nearest
+// button); a press that moves or is held becomes a pen stroke. While the pen
+// is in use, finger touches are ignored (palm rejection).
+export class PenInput {
+  constructor({ send, toNorm, snap, mouse }) {
+    this.sendFn = send;
+    this.toNorm = toNorm;
+    this.snap = snap || (() => true);
+    this.mouse = mouse || (() => false); // true: plain mouse instead of pen ink
+    this.state = null;
+    this.lastAt = -Infinity;
+    this._hoverT = -Infinity;
+  }
+
+  // Recently used: lets callers reject palm/finger touches.
+  get active() {
+    return !!this.state || performance.now() - this.lastAt < 700;
+  }
+
+  _evt(s, e, p) {
+    p = p || this.toNorm(e.clientX, e.clientY);
+    const pressure = s === 'hover' || s === 'up' || s === 'leave' ? 0 : e.pressure > 0 ? e.pressure : 0.5;
+    const evt = { t: 'pen', s, x: round(clamp(p.x, 0, 1)), y: round(clamp(p.y, 0, 1)), p: Math.round(pressure * 1000) / 1000, tx: Math.round(e.tiltX || 0), ty: Math.round(e.tiltY || 0) };
+    if (this.mouse()) evt.m = 1;
+    return evt;
+  }
+
+  down(e) {
+    this.lastAt = performance.now();
+    const st = { p: this.toNorm(e.clientX, e.clientY), x: e.clientX, y: e.clientY, first: e, last: e, stroke: false };
+    this.state = st;
+    if (!this.snap()) return this._stroke(e);
+    // Held still for a moment: a stroke (press-and-hold to drag), not a tap.
+    st.timer = setTimeout(() => this.state === st && !st.stroke && this._stroke(st.last), 250);
+  }
+
+  _stroke(e) {
+    const st = this.state;
+    clearTimeout(st.timer);
+    st.stroke = true;
+    this.sendFn(this._evt('down', st.first, st.p));
+    if (e !== st.first) this.sendFn(this._evt('move', e));
+  }
+
+  move(e) {
+    this.lastAt = performance.now();
+    const st = this.state;
+    if (!st) {
+      // Hovering (iPad Pro with Apple Pencil): the PC pointer follows.
+      if (e.timeStamp - this._hoverT < 12) return;
+      this._hoverT = e.timeStamp;
+      this.sendFn(this._evt('hover', e));
+      return;
+    }
+    st.last = e;
+    if (!st.stroke) {
+      if (Math.hypot(e.clientX - st.x, e.clientY - st.y) > 5) this._stroke(e);
+      return;
+    }
+    this.sendFn(this._evt('move', e));
+  }
+
+  up(e, cancelled) {
+    const st = this.state;
+    if (!st) return;
+    this.state = null;
+    this.lastAt = performance.now();
+    clearTimeout(st.timer);
+    if (st.stroke) this.sendFn(this._evt('up', e));
+    else if (!cancelled) this.sendFn({ t: 'tap', x: round(st.p.x), y: round(st.p.y), b: 0, snap: 1 });
+  }
+
+  leave(e) {
+    if (!this.state) this.sendFn(this._evt('leave', e));
+  }
+}
+
 export class InputController {
   /**
    * session: { control, send(evt), info }  (ViewerSession)
    * cursor:  element drawn as the remote pointer in trackpad mode
    * textInput: hidden <textarea> used to summon the on-screen keyboard
    */
-  constructor({ stage, video, session, cursor, textInput, getTouchMode, viewerPlatform }) {
+  constructor({ stage, video, session, cursor, textInput, getTouchMode, viewerPlatform, penSnap, penMouse }) {
     this.stage = stage;
     this.session = session;
     this.cursor = cursor;
@@ -149,6 +227,12 @@ export class InputController {
     this._wheel = null;
     this._lastTap = null;
     this._abort = new AbortController();
+    this.pen = new PenInput({
+      send: (evt) => this.send(evt),
+      toNorm: (x, y) => this.view.toNorm(x, y),
+      snap: penSnap,
+      mouse: penMouse,
+    });
     this._bind();
   }
 
@@ -174,6 +258,7 @@ export class InputController {
     s.addEventListener('pointermove', (e) => this._onMove(e), opts);
     s.addEventListener('pointerup', (e) => this._onUp(e, false), opts);
     s.addEventListener('pointercancel', (e) => this._onUp(e, true), opts);
+    s.addEventListener('pointerleave', (e) => e.pointerType === 'pen' && this.control === 'desktop' && this.pen.leave(e), opts);
     s.addEventListener('wheel', (e) => this._onWheel(e), { ...opts, passive: false });
     s.addEventListener('contextmenu', (e) => e.preventDefault(), opts);
     // Safari pinch gestures would otherwise zoom the page.
@@ -230,8 +315,14 @@ export class InputController {
   _onDown(e) {
     if (e.target.closest?.('[data-ui]')) return;
     e.preventDefault();
-    this.stage.setPointerCapture?.(e.pointerId);
+    try {
+      this.stage.setPointerCapture(e.pointerId);
+    } catch {}
     this.textInput && document.activeElement === this.textInput && e.pointerType === 'mouse' && this.textInput.blur();
+    if (this.control === 'desktop') {
+      if (e.pointerType === 'pen') return this.pen.down(e);
+      if (e.pointerType === 'touch' && this.pen.active) return; // palm resting while writing
+    }
     const pt = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: e.timeStamp, type: e.pointerType };
     this.pointers.set(e.pointerId, pt);
 
@@ -242,6 +333,7 @@ export class InputController {
   }
 
   _onMove(e) {
+    if (e.pointerType === 'pen' && this.control === 'desktop') return this.pen.move(e);
     const pt = this.pointers.get(e.pointerId);
     if (e.pointerType === 'mouse') {
       if (pt) Object.assign(pt, { x: e.clientX, y: e.clientY });
@@ -260,6 +352,7 @@ export class InputController {
   }
 
   _onUp(e, cancelled) {
+    if (e.pointerType === 'pen' && this.control === 'desktop') return this.pen.up(e, cancelled);
     const pt = this.pointers.get(e.pointerId);
     if (!pt) return;
     if (e.pointerType === 'mouse') {
@@ -477,7 +570,7 @@ export class InputController {
       this.view.pan(ddx, ddy);
     } else {
       const p = this.view.toNorm(g.startMid.x, g.startMid.y);
-      this._queueScroll(p, -ddx * 2, -ddy * 2);
+      this._queueScroll(p, -ddx * 4, -ddy * 4);
     }
     g.lastDist = m.dist;
     g.lastMid = m.mid;

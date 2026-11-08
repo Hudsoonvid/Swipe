@@ -143,4 +143,7 @@ Each page keeps one RTCCertificate in IndexedDB (valid 400 days); its DTLS finge
 - Input travels as the `t` messages from section 4 (`pm`, `pd`, `pu`, `wh`, `kd`, `ku`, `tx`) on the reliable connection, except pointer moves, which go on a second PeerJS data connection (`metadata.kind = "input"`, unreliable). The host accepts that connection only from the admitted viewer's fingerprint.
 - `hello` and `pake3` carry `mode`: `"screen"` (default) or `"deck"`, a keyboard & trackpad device that gets no video call.
 - The trackpad sends `{t:"mm", dx, dy, all:1}`: a relative move that may cross onto any monitor.
+- A deck device asks for the picture with `video {on}` (when its Screen window is shown) and the host starts or stops the media call. The data connection stays up either way.
+- `{t:"tap", x, y, b, snap?}`: one click at a point. With `snap:1` the host may move it onto the nearest button, link or menu item; Windows hosts use UI Automation for this.
+- `{t:"pen", s, x, y, p, tx, ty, m?}`: stylus with `s` = `hover` / `down` / `move` / `up` / `leave`, pressure `p` 0–1 and tilt `tx`/`ty` in degrees. Windows hosts inject real pen input (synthetic pointer API). Other hosts, or `m:1`, get a mouse with the left button held while the pen touches. Hover moves are sent on the lossy connection.
 - Controllers add `{t:"mm", dx, dy}` (relative pointer move in pixels, at most ±200), and `pd`/`pu`/`wh` without `x`, `y` (act at the current pointer position).

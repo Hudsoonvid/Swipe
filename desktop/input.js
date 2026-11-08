@@ -103,10 +103,13 @@ class Injector {
    *   coordinate space robot.moveMouse uses on this OS
    * platform: process.platform
    */
-  constructor({ robot, getBounds, getAllBounds, platform = process.platform }) {
+  constructor({ robot, getBounds, getAllBounds, pen = null, platform = process.platform }) {
     this.robot = robot;
     this.getBounds = getBounds;
     this.getAllBounds = getAllBounds || getBounds; // every monitor (trackpad mode)
+    this.pen = pen; // real pen input with pressure (Windows), or null for mouse emulation
+    this.penContact = false;
+    this.penLast = null;
     this.platform = platform;
     this.down = new Set(); // pressed mouse buttons
     this.keys = new Set(); // pressed robot key names
@@ -174,6 +177,12 @@ class Injector {
       case 'mm':
         this._nudge(evt);
         break;
+      case 'pen':
+        this._pen(evt);
+        break;
+      case 'tap':
+        this.tapAt(this.point(evt), evt.b === 2 ? 2 : 0);
+        break;
       case 'pd':
       case 'pu': {
         const b = evt.b === 1 || evt.b === 2 ? evt.b : 0;
@@ -219,6 +228,49 @@ class Injector {
     }
   }
 
+  // Where normalized coordinates land, in robotjs pixels (for callers that adjust it, e.g. snapping).
+  point(evt) {
+    return this._point(evt);
+  }
+
+  // A click at an exact pixel (a tap, possibly snapped onto a button).
+  tapAt(p, b = 0) {
+    this._moveTo(p);
+    this.robot.mouseToggle('down', BUTTONS[b]);
+    this.robot.mouseToggle('up', BUTTONS[b]);
+  }
+
+  // Stylus: real pen input (pressure, tilt) where the OS allows injecting it,
+  // otherwise a mouse with the left button held while the pen touches.
+  _pen(evt) {
+    const s = evt.s;
+    if (!['hover', 'down', 'move', 'up', 'leave'].includes(s)) return;
+    const p = this._point(evt);
+    this.penLast = p;
+    if (this.pen && !evt.m) {
+      let ok = false;
+      try {
+        ok = this.pen.inject(s, p, clamp01(evt.p), Math.max(-90, Math.min(90, Number(evt.tx) || 0)), Math.max(-90, Math.min(90, Number(evt.ty) || 0)));
+      } catch {
+        ok = false;
+      }
+      if (ok) {
+        this.penContact = s === 'down' || s === 'move' ? true : s === 'up' || s === 'leave' ? false : this.penContact;
+        return;
+      }
+      this.pen = null; // not supported here: use the mouse from now on
+    }
+    if (s === 'leave') return;
+    this._moveTo(p);
+    if (s === 'down' && !this.down.has(0)) {
+      this.down.add(0);
+      this.robot.mouseToggle('down', 'left');
+    } else if (s === 'up' && this.down.has(0)) {
+      this.down.delete(0);
+      this.robot.mouseToggle('up', 'left');
+    }
+  }
+
   // Wheel deltas arrive in CSS pixels (positive = scroll down / right).
   _scroll(evt) {
     this._move(evt);
@@ -244,6 +296,12 @@ class Injector {
 
   // Release anything still held (viewer disconnected mid-drag, etc.).
   releaseAll() {
+    if (this.penContact && this.pen && this.penLast) {
+      try {
+        this.pen.inject('up', this.penLast, 0, 0, 0);
+      } catch {}
+      this.penContact = false;
+    }
     for (const b of this.down) {
       try {
         this.robot.mouseToggle('up', BUTTONS[b]);

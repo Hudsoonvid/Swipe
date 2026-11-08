@@ -157,3 +157,54 @@ test('trackpad: relative moves can cross onto other monitors', () => {
     ['moveMouse', 1920, 100],
   ]);
 });
+
+test('pen without a pen driver acts as a mouse: hover moves, touching holds the left button', () => {
+  const r = fakeRobot();
+  const inj = new Injector({ robot: r, getBounds: bounds, platform: 'win32' });
+  inj.handle({ t: 'pen', s: 'hover', x: 0.5, y: 0.5, p: 0 });
+  inj.handle({ t: 'pen', s: 'down', x: 0.5, y: 0.5, p: 0.4 });
+  inj.handle({ t: 'pen', s: 'move', x: 0.6, y: 0.5, p: 0.7 });
+  inj.handle({ t: 'pen', s: 'up', x: 0.6, y: 0.5, p: 0 });
+  inj.handle({ t: 'pen', s: 'bogus', x: 0.6, y: 0.5 });
+  assert.deepEqual(r.calls.filter((c) => c[0] !== 'setMouseDelay' && c[0] !== 'setKeyboardDelay'), [
+    ['moveMouse', 3200, 720],
+    ['moveMouse', 3200, 720],
+    ['mouseToggle', 'down', 'left'],
+    ['moveMouse', 3455, 720],
+    ['moveMouse', 3455, 720],
+    ['mouseToggle', 'up', 'left'],
+  ]);
+});
+
+test('pen with a pen driver sends pressure and tilt; falls back to the mouse if injection fails', () => {
+  const r = fakeRobot();
+  const seen = [];
+  let fail = false;
+  const pen = { inject: (s, p, pressure, tx, ty) => (seen.push([s, p.x, p.y, pressure, tx, ty]), !fail) };
+  const inj = new Injector({ robot: r, getBounds: bounds, pen, platform: 'win32' });
+  inj.handle({ t: 'pen', s: 'down', x: 0, y: 0, p: 0.25, tx: 120, ty: -10 });
+  inj.handle({ t: 'pen', s: 'move', x: 1, y: 1, p: 2 });
+  assert.deepEqual(seen, [['down', 1920, 0, 0.25, 90, -10], ['move', 4479, 1439, 1, 0, 0]]);
+  inj.releaseAll(); // lifts the pen if a device goes away mid-stroke
+  assert.deepEqual(seen.at(-1)[0], 'up');
+  assert.equal(r.calls.filter((c) => c[0] === 'mouseToggle').length, 0);
+  // "m" asks for plain mouse behaviour even when a pen driver exists.
+  inj.handle({ t: 'pen', s: 'down', x: 0.5, y: 0.5, p: 0.5, m: 1 });
+  assert.deepEqual(r.calls.filter((c) => c[0] === 'mouseToggle'), [['mouseToggle', 'down', 'left']]);
+  inj.handle({ t: 'pen', s: 'up', x: 0.5, y: 0.5, m: 1 });
+  fail = true;
+  inj.handle({ t: 'pen', s: 'down', x: 0.5, y: 0.5, p: 0.5 });
+  assert.equal(inj.pen, null);
+  assert.deepEqual(r.calls.filter((c) => c[0] === 'mouseToggle').at(-1), ['mouseToggle', 'down', 'left']);
+});
+
+test('tap clicks once at the point (snapping is done by the caller)', () => {
+  const r = fakeRobot();
+  const inj = new Injector({ robot: r, getBounds: bounds, platform: 'win32' });
+  inj.handle({ t: 'tap', x: 0.5, y: 0.5, b: 0 });
+  inj.tapAt({ x: 100, y: 200 }, 2);
+  assert.deepEqual(r.calls.filter((c) => c[0] !== 'setMouseDelay' && c[0] !== 'setKeyboardDelay'), [
+    ['moveMouse', 3200, 720], ['mouseToggle', 'down', 'left'], ['mouseToggle', 'up', 'left'],
+    ['moveMouse', 100, 200], ['mouseToggle', 'down', 'right'], ['mouseToggle', 'up', 'right'],
+  ]);
+});

@@ -25,20 +25,38 @@ The installers are rebuilt and published automatically on every change to `main`
 - **◀ ▶** switches between the PC's monitors.
 - **⋯** has quality (*Auto*, *Data saver* for mobile data, *Sharpest* for small text) and live stats. The connection comes back by itself after a network drop.
 
-### iPad (or any tablet) as the PC's keyboard and trackpad
+### iPad (or any tablet) as the PC's keyboard, trackpad, pen tablet and touchscreen
 
-On the iPad, open https://hudsoonvid.github.io/Swipe/ and tap **⌨🖱 Use as keyboard & trackpad** (or the ⌨🖱 button next to a PC under *My PCs*). The iPad becomes a wireless keyboard, trackpad and hotkey pad for the PC. No video is sent, so it uses almost no data.
+On the iPad, open https://hudsoonvid.github.io/Swipe/ and tap **⌨🖱 Use as keyboard & trackpad** (or the ⌨🖱 button next to a PC under *My PCs*). The iPad becomes a wireless control deck for the PC. Video is only sent if you show the Screen window.
 
-- **Trackpad:** one finger moves the pointer (with acceleration, across all monitors), tap = click, two-finger tap = right-click, two fingers scroll, tap then drag = drag. There are also Left/Right click buttons.
-- **Keyboard:** real keys you can hold. Tap Ctrl/Shift/Alt/Win once and it applies to the next key (e.g. Ctrl, then C), or hold it with another finger. A Magic Keyboard or other physical keyboard works too, and ⌨ in the toolbar brings up the iPad's own keyboard (dictation, other languages).
-- **⚙ Layout** makes it your own:
-  - Presets: keyboard top / trackpad bottom (and the reverse), keyboard left / trackpad right (and the reverse), trackpad only, keyboard only, hotkeys + trackpad.
-  - Or arrange it yourself: stacked or side by side, the order of the panels and how much space each gets.
-  - Keyboard size: **60%**, **70%** (adds arrows), **80%** (tenkeyless), **90%** (compact with numpad) or **100%**. On 60% and 70%, *Fn* + number row gives F1–F12 and Fn + I J K L gives arrows.
-  - Trackpad speed and natural scrolling.
-- **Hotkeys (like a Stream Deck):** a grid of buttons for shortcuts and macros. *⚙ → Edit hotkeys* to add, change, reorder or delete them. An action is a key combo (`Ctrl+Shift+Esc`, `Win+Shift+S`, `VolUp`), text in quotes (`"hello"`), a pause (`wait 300`), or several of those separated by commas: `Win+R, wait 400, "notepad", Enter`. `Mod` means Ctrl on Windows and ⌘ on a Mac.
+- **Windows you arrange yourself (like Stage Manager):** Keyboard, Trackpad, Hotkeys and Screen are windows. Tap **⤢ Arrange** to drag them by their bar, resize them from the corner, overlap them or close them. Edges snap to each other. **⚙ Layout** has presets: keyboard top / trackpad bottom (and reversed), keyboard left / trackpad right (and reversed), trackpad only, keyboard only, hotkeys + trackpad, screen + keyboard, screen only.
+- **Screen window:** the PC's live picture. Touch it directly: tap = click there, hold = right-click, drag = drag, two fingers scroll. ◀ ▶ switch monitors.
+- **Trackpad:** *Trackpad* mode moves the pointer (with acceleration, across all monitors). *Direct* mode (🎯) maps the pad onto the screen, so each spot on the pad is that spot on the screen. ◀ ▶ pick the monitor. Two-finger scrolling is fast and glides after a flick.
+- **Mac trackpad gestures** (sent as the PC's own shortcuts):
 
-Your layout and hotkeys are saved on the iPad.
+  | Gesture | Does |
+  | --- | --- |
+  | Tap / two-finger tap | Click / right-click |
+  | Pinch | Zoom |
+  | Two-finger double-tap | Smart zoom |
+  | Three or four fingers up | Task View (Mission Control on a Mac) |
+  | Three or four fingers down | Show desktop (App Exposé on a Mac) |
+  | Three or four fingers left / right | Switch desktops |
+  | Pinch thumb + three fingers | Start (Launchpad on a Mac) |
+  | Spread thumb + three fingers | Show desktop |
+  | Three-finger tap | Middle click (Look Up on a Mac) |
+  | Two fingers in from the right edge | Notifications |
+  | Three-finger drag (optional) | Drag, as on a Mac |
+  | Hold the space bar and slide | Move the pointer, like the iPad keyboard |
+
+- **Apple Pencil:** points exactly where you touch: on the Screen window, in Direct mode, and on the trackpad (like a drawing tablet). Hover moves the pointer (iPad Pro). On a Windows PC, pressure and tilt reach drawing apps as real pen input. Your palm is ignored while you write.
+- **Snap to buttons:** a Pencil tap (or a finger tap in Direct / Screen) that just misses a button, link, menu item, checkbox or tab clicks that control instead. Windows reports where they are through its accessibility interface. Turn it off in ⚙ Layout.
+- **Keyboard:** 60% to 100% layouts with holdable keys and sticky modifiers. Tap Ctrl once and it applies to the next key. On 60%/70%, an *Fn* layer gives F1–F12 and arrows. A Magic Keyboard works too, and ⌨ in the toolbar brings up the iPad's own keyboard.
+- **Hotkeys (like a Stream Deck):** *⚙ → Edit hotkeys*. An action is a key combo (`Ctrl+Shift+Esc`, `Win+Shift+S`, `VolUp`), text in quotes (`"hello"`), a pause (`wait 300`), or several of those separated by commas: `Win+R, wait 400, "notepad", Enter`. `Mod` means Ctrl on Windows and ⌘ on a Mac.
+
+Your layout, gestures and hotkeys are saved on the iPad.
+
+The Pencil also works in the normal screen view (**Connect**): it draws with pressure, taps snap to buttons, and palms are ignored.
 
 ### Updates
 

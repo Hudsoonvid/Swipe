@@ -19,6 +19,7 @@
   "dependencies": {
     "@jitsi/robotjs": "^0.6.24",
     "electron-updater": "^6.8.11",
+    "koffi": "^2.16.3",
     "peerjs": "^1.5.5"
   },
   "devDependencies": {
@@ -32,7 +33,9 @@
       "main.js",
       "preload.cjs",
       "input.js",
-      "package.json"
+      "package.json",
+      "pen-win.js",
+      "snap-win.js"
     ],
     "extraResources": [
       {

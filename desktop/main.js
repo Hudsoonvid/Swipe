@@ -26,6 +26,8 @@ const {
 } = require('electron');
 const { pathToFileURL } = require('node:url');
 const { Injector } = require('./input');
+const { createPenInjector } = require('./pen-win');
+const { createSnapper } = require('./snap-win');
 const fsSync = require('node:fs');
 const pkg = require('./package.json');
 
@@ -243,7 +245,28 @@ function createTray() {
 
 // ---------- IPC ----------
 
-const injector = robot ? new Injector({ robot, getBounds: inputBounds, getAllBounds: allInputBounds }) : null;
+const injector = robot ? new Injector({ robot, getBounds: inputBounds, getAllBounds: allInputBounds, pen: createPenInjector() }) : null;
+const snapper = injector ? createSnapper() : null;
+
+// Taps marked "snap" may first ask Windows for the nearest button; input
+// arriving meanwhile waits so everything stays in order.
+let inputChain = null;
+function runInput(evt) {
+  if (evt?.t === 'tap' && evt.snap && snapper) {
+    const p = injector.point(evt);
+    const r = Math.round(26 * (selectedDisplay().scaleFactor || 1));
+    return queueInput(async () => injector.tapAt((await snapper.find(p.x, p.y, r)) || p, evt.b === 2 ? 2 : 0));
+  }
+  if (inputChain) return queueInput(() => injector.handle(evt));
+  injector.handle(evt);
+}
+function queueInput(fn) {
+  const next = (inputChain || Promise.resolve()).then(fn).catch(() => {});
+  inputChain = next;
+  next.then(() => {
+    if (inputChain === next) inputChain = null;
+  });
+}
 
 function canControl() {
   if (!injector) return false;
@@ -281,7 +304,7 @@ ipcMain.handle('select-screen', (_e, id) => {
 });
 
 ipcMain.on('input', (_e, evt) => {
-  if (injector && hostStatus.status !== 'offline') injector.handle(evt);
+  if (injector && hostStatus.status !== 'offline') runInput(evt);
 });
 
 ipcMain.on('release-input', () => injector?.releaseAll());
@@ -430,6 +453,7 @@ app.whenReady().then(async () => {
     if (hiddenAfterUpdate) fsSync.unlinkSync(START_HIDDEN_ONCE());
   } catch {}
   setupUpdates();
+  setTimeout(() => snapper?.warm(), 4000); // PowerShell + UI Automation take a moment to load
   if (hiddenAfterUpdate || process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAsHidden) {
     createWindow();
     win.hide();
@@ -442,6 +466,7 @@ app.on('activate', showWindow);
 
 app.on('before-quit', () => {
   quitting = true;
+  snapper?.stop();
   injector?.releaseAll();
 });
 
